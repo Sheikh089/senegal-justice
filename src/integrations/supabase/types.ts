@@ -14,16 +14,245 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activites: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          dossier_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          dossier_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          dossier_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activites_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audiences: {
+        Row: {
+          created_at: string
+          date_audience: string
+          dossier_id: string
+          greffier_id: string | null
+          id: string
+          juge_id: string | null
+          notes: string | null
+          salle: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_audience: string
+          dossier_id: string
+          greffier_id?: string | null
+          id?: string
+          juge_id?: string | null
+          notes?: string | null
+          salle?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_audience?: string
+          dossier_id?: string
+          greffier_id?: string | null
+          id?: string
+          juge_id?: string | null
+          notes?: string | null
+          salle?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audiences_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossiers: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string
+          date_faits: string | null
+          description: string | null
+          id: string
+          lieu: string | null
+          priority: string | null
+          reference: string
+          status: Database["public"]["Enums"]["dossier_status"]
+          titre: string
+          type_infraction: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by: string
+          date_faits?: string | null
+          description?: string | null
+          id?: string
+          lieu?: string | null
+          priority?: string | null
+          reference: string
+          status?: Database["public"]["Enums"]["dossier_status"]
+          titre: string
+          type_infraction?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string
+          date_faits?: string | null
+          description?: string | null
+          id?: string
+          lieu?: string | null
+          priority?: string | null
+          reference?: string
+          status?: Database["public"]["Enums"]["dossier_status"]
+          titre?: string
+          type_infraction?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pieces_jointes: {
+        Row: {
+          created_at: string
+          dossier_id: string
+          id: string
+          nom: string
+          type: string | null
+          uploaded_by: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          dossier_id: string
+          id?: string
+          nom: string
+          type?: string | null
+          uploaded_by: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          dossier_id?: string
+          id?: string
+          nom?: string
+          type?: string | null
+          uploaded_by?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pieces_jointes_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          badge_number: string | null
+          created_at: string
+          department: string | null
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_number?: string | null
+          created_at?: string
+          department?: string | null
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_number?: string | null
+          created_at?: string
+          department?: string | null
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "police" | "procureur" | "juge" | "greffier"
+      dossier_status:
+        | "nouveau"
+        | "en_cours"
+        | "transmis"
+        | "audience_programmee"
+        | "juge"
+        | "classe"
+        | "archive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +379,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["police", "procureur", "juge", "greffier"],
+      dossier_status: [
+        "nouveau",
+        "en_cours",
+        "transmis",
+        "audience_programmee",
+        "juge",
+        "classe",
+        "archive",
+      ],
+    },
   },
 } as const
