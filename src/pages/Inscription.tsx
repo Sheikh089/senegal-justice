@@ -17,6 +17,7 @@ const ROLES: { value: AppRole; label: string }[] = [
   { value: "procureur", label: "Procureur" },
   { value: "juge", label: "Juge" },
   { value: "greffier", label: "Greffier" },
+  { value: "assistant", label: "Assistant" },
 ];
 
 const Inscription = () => {

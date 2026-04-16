@@ -244,7 +244,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "police" | "procureur" | "juge" | "greffier"
+      app_role:
+        | "police"
+        | "procureur"
+        | "juge"
+        | "greffier"
+        | "admin"
+        | "assistant"
       dossier_status:
         | "nouveau"
         | "en_cours"
@@ -380,7 +386,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["police", "procureur", "juge", "greffier"],
+      app_role: [
+        "police",
+        "procureur",
+        "juge",
+        "greffier",
+        "admin",
+        "assistant",
+      ],
       dossier_status: [
         "nouveau",
         "en_cours",
