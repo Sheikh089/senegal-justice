@@ -3,8 +3,12 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Login from "./pages/Login.tsx";
+import Inscription from "./pages/Inscription.tsx";
 import PoliceDashboard from "./pages/PoliceDashboard.tsx";
 import PoliceDossiers from "./pages/PoliceDossiers.tsx";
 import PoliceNouveau from "./pages/PoliceNouveau.tsx";
@@ -20,19 +24,23 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* Police routes */}
-          <Route path="/police" element={<PoliceDashboard />} />
-          <Route path="/police/dossiers" element={<PoliceDossiers />} />
-          <Route path="/police/nouveau" element={<PoliceNouveau />} />
-          {/* Tribunal routes */}
-          <Route path="/tribunal" element={<TribunalDashboard />} />
-          <Route path="/tribunal/dossiers" element={<TribunalDossiers />} />
-          <Route path="/tribunal/audiences" element={<TribunalAudiences />} />
-          {/* Catch-all */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/inscription" element={<Inscription />} />
+            {/* Police routes */}
+            <Route path="/police" element={<ProtectedRoute allowedRoles={["police"]}><PoliceDashboard /></ProtectedRoute>} />
+            <Route path="/police/dossiers" element={<ProtectedRoute allowedRoles={["police"]}><PoliceDossiers /></ProtectedRoute>} />
+            <Route path="/police/nouveau" element={<ProtectedRoute allowedRoles={["police"]}><PoliceNouveau /></ProtectedRoute>} />
+            {/* Tribunal routes */}
+            <Route path="/tribunal" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalDashboard /></ProtectedRoute>} />
+            <Route path="/tribunal/dossiers" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalDossiers /></ProtectedRoute>} />
+            <Route path="/tribunal/audiences" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalAudiences /></ProtectedRoute>} />
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
