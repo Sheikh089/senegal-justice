@@ -35,7 +35,9 @@ const Login = () => {
       .maybeSingle();
 
     const role = roleData?.role;
-    if (role === "police") {
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
+    } else if (role === "police") {
       navigate("/police", { replace: true });
     } else if (role === "procureur" || role === "juge" || role === "greffier") {
       navigate("/tribunal", { replace: true });
