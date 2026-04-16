@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Login from "./pages/Login.tsx";
 import Inscription from "./pages/Inscription.tsx";
+import AdminDashboard from "./pages/AdminDashboard.tsx";
 import PoliceDashboard from "./pages/PoliceDashboard.tsx";
 import PoliceDossiers from "./pages/PoliceDossiers.tsx";
 import PoliceNouveau from "./pages/PoliceNouveau.tsx";
@@ -29,6 +30,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/inscription" element={<Inscription />} />
+            {/* Admin */}
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
             {/* Police routes */}
             <Route path="/police" element={<ProtectedRoute allowedRoles={["police"]}><PoliceDashboard /></ProtectedRoute>} />
             <Route path="/police/dossiers" element={<ProtectedRoute allowedRoles={["police"]}><PoliceDossiers /></ProtectedRoute>} />

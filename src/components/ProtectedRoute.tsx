@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to appropriate area based on role
+    if (role === "admin") return <Navigate to="/admin" replace />;
     if (role === "police") return <Navigate to="/police" replace />;
     return <Navigate to="/tribunal" replace />;
   }
