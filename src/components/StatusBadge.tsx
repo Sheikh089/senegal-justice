@@ -1,4 +1,10 @@
-import { statutLabels, statutColors, prioriteColors, type DossierStatus } from "@/lib/mock-data";
+import {
+  statutLabels,
+  statutColors,
+  prioriteColors,
+  prioriteLabels,
+  type DossierStatus,
+} from "@/lib/dossier-helpers";
 
 export function StatusBadge({ statut }: { statut: DossierStatus }) {
   return (
@@ -8,10 +14,11 @@ export function StatusBadge({ statut }: { statut: DossierStatus }) {
   );
 }
 
-export function PrioriteBadge({ priorite }: { priorite: "haute" | "moyenne" | "basse" }) {
+export function PrioriteBadge({ priorite }: { priorite: string }) {
+  const key = priorite || "normale";
   return (
-    <span className={`badge-status ${prioriteColors[priorite]}`}>
-      {priorite.charAt(0).toUpperCase() + priorite.slice(1)}
+    <span className={`badge-status ${prioriteColors[key] ?? prioriteColors.normale}`}>
+      {prioriteLabels[key] ?? key}
     </span>
   );
 }

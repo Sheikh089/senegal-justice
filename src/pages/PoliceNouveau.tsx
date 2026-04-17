@@ -1,18 +1,77 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
-import { FilePlus, Upload, Send } from "lucide-react";
+import { FilePlus, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { generateReference } from "@/lib/dossier-helpers";
 
 export default function PoliceNouveau() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    typeInfraction: "",
-    plaignant: "",
-    suspect: "",
+    titre: "",
+    type_infraction: "",
+    lieu: "",
     description: "",
-    priorite: "moyenne",
+    priority: "normale",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const save = async (transmettre: boolean) => {
+    if (!user) return;
+    if (!formData.titre || !formData.type_infraction) {
+      toast({
+        title: "Champs requis",
+        description: "Renseigne au moins le titre et le type d'infraction.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
+    const { data, error } = await supabase
+      .from("dossiers")
+      .insert({
+        reference: generateReference(),
+        titre: formData.titre,
+        type_infraction: formData.type_infraction,
+        lieu: formData.lieu || null,
+        description: formData.description || null,
+        priority: formData.priority,
+        status: transmettre ? "transmis" : "nouveau",
+        created_by: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+
+    if (data) {
+      await supabase.from("activites").insert({
+        dossier_id: data.id,
+        user_id: user.id,
+        action: transmettre ? "Dossier créé et transmis" : "Dossier créé",
+        details: data.reference,
+      });
+    }
+
+    toast({
+      title: "Dossier enregistré",
+      description: `Référence ${data?.reference}`,
+    });
+    navigate("/police/dossiers");
   };
 
   return (
@@ -25,66 +84,65 @@ export default function PoliceNouveau() {
             </div>
             <div>
               <h2 className="font-heading font-semibold text-foreground">Enregistrer une plainte</h2>
-              <p className="text-xs text-muted-foreground">Un numéro unique sera généré automatiquement</p>
+              <p className="text-xs text-muted-foreground">Une référence unique sera générée automatiquement</p>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Titre du dossier</label>
+            <input
+              name="titre"
+              value={formData.titre}
+              onChange={handleChange}
+              placeholder="Ex: Vol à main armée — Quartier Plateau"
+              className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+            />
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Type d'infraction</label>
               <select
-                name="typeInfraction"
-                value={formData.typeInfraction}
+                name="type_infraction"
+                value={formData.type_infraction}
                 onChange={handleChange}
                 className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
               >
                 <option value="">Sélectionner...</option>
-                <option value="vol">Vol</option>
-                <option value="vol_aggrave">Vol aggravé</option>
-                <option value="escroquerie">Escroquerie</option>
-                <option value="violence">Violence physique</option>
-                <option value="abus_confiance">Abus de confiance</option>
-                <option value="faux">Faux et usage de faux</option>
-                <option value="trouble">Trouble à l'ordre public</option>
-                <option value="autre">Autre</option>
+                <option value="Vol">Vol</option>
+                <option value="Vol aggravé">Vol aggravé</option>
+                <option value="Escroquerie">Escroquerie</option>
+                <option value="Violence physique">Violence physique</option>
+                <option value="Abus de confiance">Abus de confiance</option>
+                <option value="Faux et usage de faux">Faux et usage de faux</option>
+                <option value="Trouble à l'ordre public">Trouble à l'ordre public</option>
+                <option value="Autre">Autre</option>
               </select>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Priorité</label>
               <select
-                name="priorite"
-                value={formData.priorite}
+                name="priority"
+                value={formData.priority}
                 onChange={handleChange}
                 className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
               >
                 <option value="basse">Basse</option>
-                <option value="moyenne">Moyenne</option>
+                <option value="normale">Normale</option>
                 <option value="haute">Haute</option>
               </select>
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">Plaignant</label>
-              <input
-                name="plaignant"
-                value={formData.plaignant}
-                onChange={handleChange}
-                placeholder="Nom complet du plaignant"
-                className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">Suspect</label>
-              <input
-                name="suspect"
-                value={formData.suspect}
-                onChange={handleChange}
-                placeholder="Nom ou 'Inconnu'"
-                className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Lieu</label>
+            <input
+              name="lieu"
+              value={formData.lieu}
+              onChange={handleChange}
+              placeholder="Quartier, ville..."
+              className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -99,21 +157,19 @@ export default function PoliceNouveau() {
             />
           </div>
 
-          {/* Upload zone */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">Pièces jointes</label>
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/30 transition-colors cursor-pointer">
-              <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">Photos, vidéos, documents PDF</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Glissez-déposez ou cliquez pour sélectionner</p>
-            </div>
-          </div>
-
           <div className="flex gap-3 pt-2">
-            <button className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-              <FilePlus className="h-4 w-4" /> Enregistrer le dossier
+            <button
+              onClick={() => save(false)}
+              disabled={saving}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <FilePlus className="h-4 w-4" /> Enregistrer
             </button>
-            <button className="px-4 py-2.5 rounded-lg border border-input text-muted-foreground text-sm hover:bg-muted transition-colors flex items-center gap-2">
+            <button
+              onClick={() => save(true)}
+              disabled={saving}
+              className="px-4 py-2.5 rounded-lg border border-input text-muted-foreground text-sm hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
               <Send className="h-4 w-4" /> Enregistrer et transmettre
             </button>
           </div>

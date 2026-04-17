@@ -1,14 +1,14 @@
-import { FileText, Paperclip, Calendar, User } from "lucide-react";
+import { FileText, Paperclip, Calendar, MapPin } from "lucide-react";
 import { StatusBadge, PrioriteBadge } from "./StatusBadge";
-import type { Dossier } from "@/lib/mock-data";
+import type { DossierRow } from "@/lib/dossier-helpers";
 
 interface DossierCardProps {
-  dossier: Dossier;
+  dossier: DossierRow & { pieces_count?: number };
   onClick?: () => void;
   variant?: "police" | "tribunal";
 }
 
-export function DossierCard({ dossier, onClick, variant = "police" }: DossierCardProps) {
+export function DossierCard({ dossier, onClick }: DossierCardProps) {
   return (
     <button
       onClick={onClick}
@@ -17,11 +17,11 @@ export function DossierCard({ dossier, onClick, variant = "police" }: DossierCar
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-mono text-muted-foreground">{dossier.numero}</span>
+          <span className="text-xs font-mono text-muted-foreground">{dossier.reference}</span>
         </div>
         <div className="flex gap-1.5">
-          <PrioriteBadge priorite={dossier.priorite} />
-          <StatusBadge statut={dossier.statut} />
+          <PrioriteBadge priorite={dossier.priority ?? "normale"} />
+          <StatusBadge statut={dossier.status} />
         </div>
       </div>
 
@@ -29,20 +29,26 @@ export function DossierCard({ dossier, onClick, variant = "police" }: DossierCar
         {dossier.titre}
       </h3>
 
-      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{dossier.description}</p>
+      {dossier.description && (
+        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{dossier.description}</p>
+      )}
 
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <User className="h-3 w-3" />
-          {variant === "police" ? dossier.officier : dossier.jugeAssigne || "Non attribué"}
-        </span>
-        <span className="flex items-center gap-1">
-          <Paperclip className="h-3 w-3" />
-          {dossier.piecesJointes}
-        </span>
+      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+        {dossier.type_infraction && (
+          <span className="flex items-center gap-1">
+            <Paperclip className="h-3 w-3" />
+            {dossier.type_infraction}
+          </span>
+        )}
+        {dossier.lieu && (
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {dossier.lieu}
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <Calendar className="h-3 w-3" />
-          {dossier.dateCreation}
+          {new Date(dossier.created_at).toLocaleDateString("fr-FR")}
         </span>
       </div>
     </button>
