@@ -1,14 +1,34 @@
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { DossierCard } from "@/components/DossierCard";
-import { mockDossiers } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import type { DossierRow } from "@/lib/dossier-helpers";
 import { Search, Filter } from "lucide-react";
-import { useState } from "react";
 
 export default function PoliceDossiers() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const policeDossiers = mockDossiers.filter(d =>
-    d.titre.toLowerCase().includes(search.toLowerCase()) ||
-    d.numero.toLowerCase().includes(search.toLowerCase())
+  const [dossiers, setDossiers] = useState<DossierRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("dossiers")
+      .select("*")
+      .eq("created_by", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setDossiers(data ?? []);
+        setLoading(false);
+      });
+  }, [user]);
+
+  const filtered = dossiers.filter(
+    (d) =>
+      d.titre.toLowerCase().includes(search.toLowerCase()) ||
+      d.reference.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -21,7 +41,7 @@ export default function PoliceDossiers() {
               type="text"
               placeholder="Rechercher un dossier..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
             />
           </div>
@@ -30,7 +50,11 @@ export default function PoliceDossiers() {
           </button>
         </div>
         <div className="space-y-3">
-          {policeDossiers.map(d => (
+          {loading && <p className="text-xs text-muted-foreground">Chargement...</p>}
+          {!loading && filtered.length === 0 && (
+            <p className="text-xs text-muted-foreground">Aucun dossier trouvé.</p>
+          )}
+          {filtered.map((d) => (
             <DossierCard key={d.id} dossier={d} variant="police" />
           ))}
         </div>
