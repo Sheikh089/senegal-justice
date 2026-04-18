@@ -17,6 +17,7 @@ import TribunalDashboard from "./pages/TribunalDashboard.tsx";
 import TribunalDossiers from "./pages/TribunalDossiers.tsx";
 import TribunalAudiences from "./pages/TribunalAudiences.tsx";
 import ComingSoon from "./pages/ComingSoon.tsx";
+import TribunalAttribution from "./pages/TribunalAttribution.tsx";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +44,7 @@ const App = () => (
             <Route path="/tribunal" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalDashboard /></ProtectedRoute>} />
             <Route path="/tribunal/dossiers" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalDossiers /></ProtectedRoute>} />
             <Route path="/tribunal/audiences" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalAudiences /></ProtectedRoute>} />
-            <Route path="/tribunal/attribution" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><ComingSoon variant="tribunal" title="Attribution" /></ProtectedRoute>} />
+            <Route path="/tribunal/attribution" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalAttribution /></ProtectedRoute>} />
             <Route path="/tribunal/decisions" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><ComingSoon variant="tribunal" title="Décisions" /></ProtectedRoute>} />
             <Route path="/tribunal/stats" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><ComingSoon variant="tribunal" title="Statistiques" /></ProtectedRoute>} />
             {/* Catch-all */}
