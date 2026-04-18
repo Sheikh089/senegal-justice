@@ -17,6 +17,7 @@ import TribunalDashboard from "./pages/TribunalDashboard.tsx";
 import TribunalDossiers from "./pages/TribunalDossiers.tsx";
 import TribunalAudiences from "./pages/TribunalAudiences.tsx";
 import ComingSoon from "./pages/ComingSoon.tsx";
+import TribunalAttribution from "./pages/TribunalAttribution.tsx";
 
 const queryClient = new QueryClient();
 
