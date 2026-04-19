@@ -4,12 +4,15 @@ import { DossierCard } from "@/components/DossierCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { DossierRow } from "@/lib/dossier-helpers";
+import { enrichDossiersWithAssignee } from "@/lib/dossier-assignee";
 import { Search, Filter } from "lucide-react";
+
+type EnrichedDossier = DossierRow & { assigned_name?: string | null; assigned_role?: string | null };
 
 export default function PoliceDossiers() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const [dossiers, setDossiers] = useState<DossierRow[]>([]);
+  const [dossiers, setDossiers] = useState<EnrichedDossier[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +22,9 @@ export default function PoliceDossiers() {
       .select("*")
       .eq("created_by", user.id)
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setDossiers(data ?? []);
+      .then(async ({ data }) => {
+        const enriched = await enrichDossiersWithAssignee(data ?? []);
+        setDossiers(enriched);
         setLoading(false);
       });
   }, [user]);

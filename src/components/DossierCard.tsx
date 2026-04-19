@@ -1,9 +1,9 @@
-import { FileText, Paperclip, Calendar, MapPin } from "lucide-react";
+import { FileText, Paperclip, Calendar, MapPin, UserCheck } from "lucide-react";
 import { StatusBadge, PrioriteBadge } from "./StatusBadge";
 import type { DossierRow } from "@/lib/dossier-helpers";
 
 interface DossierCardProps {
-  dossier: DossierRow & { pieces_count?: number };
+  dossier: DossierRow & { pieces_count?: number; assigned_name?: string | null; assigned_role?: string | null };
   onClick?: () => void;
   variant?: "police" | "tribunal";
 }
@@ -50,6 +50,15 @@ export function DossierCard({ dossier, onClick }: DossierCardProps) {
           <Calendar className="h-3 w-3" />
           {new Date(dossier.created_at).toLocaleDateString("fr-FR")}
         </span>
+        {dossier.assigned_name && (
+          <span className="flex items-center gap-1 text-primary">
+            <UserCheck className="h-3 w-3" />
+            {dossier.assigned_name}
+            {dossier.assigned_role && (
+              <span className="text-muted-foreground"> ({dossier.assigned_role})</span>
+            )}
+          </span>
+        )}
       </div>
     </button>
   );

@@ -3,11 +3,14 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { DossierCard } from "@/components/DossierCard";
 import { supabase } from "@/integrations/supabase/client";
 import type { DossierRow } from "@/lib/dossier-helpers";
+import { enrichDossiersWithAssignee } from "@/lib/dossier-assignee";
 import { Search, Filter } from "lucide-react";
+
+type EnrichedDossier = DossierRow & { assigned_name?: string | null; assigned_role?: string | null };
 
 export default function TribunalDossiers() {
   const [search, setSearch] = useState("");
-  const [dossiers, setDossiers] = useState<DossierRow[]>([]);
+  const [dossiers, setDossiers] = useState<EnrichedDossier[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,8 +19,9 @@ export default function TribunalDossiers() {
       .select("*")
       .in("status", ["transmis", "audience_programmee", "juge", "classe"])
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setDossiers(data ?? []);
+      .then(async ({ data }) => {
+        const enriched = await enrichDossiersWithAssignee(data ?? []);
+        setDossiers(enriched);
         setLoading(false);
       });
   }, []);
