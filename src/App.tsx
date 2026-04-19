@@ -18,6 +18,7 @@ import TribunalDossiers from "./pages/TribunalDossiers.tsx";
 import TribunalAudiences from "./pages/TribunalAudiences.tsx";
 import ComingSoon from "./pages/ComingSoon.tsx";
 import TribunalAttribution from "./pages/TribunalAttribution.tsx";
+import DossierDetail from "./pages/DossierDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/police/nouveau" element={<ProtectedRoute allowedRoles={["police"]}><PoliceNouveau /></ProtectedRoute>} />
             <Route path="/police/transmettre" element={<ProtectedRoute allowedRoles={["police"]}><ComingSoon variant="police" title="Transmettre" /></ProtectedRoute>} />
             <Route path="/police/stats" element={<ProtectedRoute allowedRoles={["police"]}><ComingSoon variant="police" title="Statistiques" /></ProtectedRoute>} />
+            <Route path="/police/dossiers/:id" element={<ProtectedRoute allowedRoles={["police"]}><DossierDetail variant="police" /></ProtectedRoute>} />
             {/* Tribunal routes */}
             <Route path="/tribunal" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalDashboard /></ProtectedRoute>} />
             <Route path="/tribunal/dossiers" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalDossiers /></ProtectedRoute>} />
@@ -47,6 +49,7 @@ const App = () => (
             <Route path="/tribunal/attribution" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><TribunalAttribution /></ProtectedRoute>} />
             <Route path="/tribunal/decisions" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><ComingSoon variant="tribunal" title="Décisions" /></ProtectedRoute>} />
             <Route path="/tribunal/stats" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><ComingSoon variant="tribunal" title="Statistiques" /></ProtectedRoute>} />
+            <Route path="/tribunal/dossiers/:id" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><DossierDetail variant="tribunal" /></ProtectedRoute>} />
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
