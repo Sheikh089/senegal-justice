@@ -96,6 +96,50 @@ export type Database = {
           },
         ]
       }
+      decisions: {
+        Row: {
+          created_at: string
+          date_decision: string
+          dossier_id: string
+          id: string
+          juge_id: string
+          motivation: string | null
+          peine: string | null
+          updated_at: string
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          date_decision?: string
+          dossier_id: string
+          id?: string
+          juge_id: string
+          motivation?: string | null
+          peine?: string | null
+          updated_at?: string
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          date_decision?: string
+          dossier_id?: string
+          id?: string
+          juge_id?: string
+          motivation?: string | null
+          peine?: string | null
+          updated_at?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisions_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dossiers: {
         Row: {
           assigned_to: string | null
