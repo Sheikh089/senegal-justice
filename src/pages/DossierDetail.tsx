@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { DossierRow } from "@/lib/dossier-helpers";
+import { PiecesJointes } from "@/components/PiecesJointes";
 
 interface AudienceRow {
   id: string;
