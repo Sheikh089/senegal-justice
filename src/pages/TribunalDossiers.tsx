@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { DossierCard } from "@/components/DossierCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Search, Filter } from "lucide-react";
 type EnrichedDossier = DossierRow & { assigned_name?: string | null; assigned_role?: string | null };
 
 export default function TribunalDossiers() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [dossiers, setDossiers] = useState<EnrichedDossier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,12 @@ export default function TribunalDossiers() {
             <p className="text-xs text-muted-foreground">Aucun dossier trouvé.</p>
           )}
           {filtered.map((d) => (
-            <DossierCard key={d.id} dossier={d} variant="tribunal" />
+            <DossierCard
+              key={d.id}
+              dossier={d}
+              variant="tribunal"
+              onClick={() => navigate(`/tribunal/dossiers/${d.id}`)}
+            />
           ))}
         </div>
       </div>
