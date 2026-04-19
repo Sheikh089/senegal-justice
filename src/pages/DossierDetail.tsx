@@ -188,6 +188,8 @@ export default function DossierDetail({ variant }: Props) {
               </div>
             </div>
 
+            <PiecesJointes dossierId={dossier.id} />
+
             {audience && (
               <div className="stat-card">
                 <h3 className="font-heading text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
