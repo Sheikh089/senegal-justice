@@ -18,6 +18,13 @@ export default function PoliceNouveau() {
     lieu: "",
     description: "",
     priority: "normale",
+    mis_en_cause_prenom: "",
+    mis_en_cause_nom: "",
+    mis_en_cause_date_naissance: "",
+    mis_en_cause_lieu_naissance: "",
+    mis_en_cause_profession: "",
+    mis_en_cause_telephone: "",
+    mis_en_cause_adresse: "",
   });
 
   const handleChange = (
@@ -48,6 +55,13 @@ export default function PoliceNouveau() {
         priority: formData.priority,
         status: transmettre ? "transmis" : "nouveau",
         created_by: user.id,
+        mis_en_cause_prenom: formData.mis_en_cause_prenom || null,
+        mis_en_cause_nom: formData.mis_en_cause_nom || null,
+        mis_en_cause_date_naissance: formData.mis_en_cause_date_naissance || null,
+        mis_en_cause_lieu_naissance: formData.mis_en_cause_lieu_naissance || null,
+        mis_en_cause_profession: formData.mis_en_cause_profession || null,
+        mis_en_cause_telephone: formData.mis_en_cause_telephone || null,
+        mis_en_cause_adresse: formData.mis_en_cause_adresse || null,
       })
       .select()
       .single();
