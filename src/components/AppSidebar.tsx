@@ -10,9 +10,12 @@ import {
   Scale,
   Shield,
   ArrowLeft,
+  LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import {
   Sidebar,
   SidebarContent,
@@ -46,7 +49,15 @@ export function AppSidebar({ variant }: { variant: "police" | "tribunal" }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const items = variant === "police" ? policeItems : tribunalItems;
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Déconnecté");
+    navigate("/login");
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -96,8 +107,22 @@ export function AppSidebar({ variant }: { variant: "police" | "tribunal" }) {
         </SidebarGroup>
 
         {/* Back to home */}
-        <div className="mt-auto p-4">
+        <div className="mt-auto p-4 space-y-1">
+          {user && !collapsed && (
+            <p className="text-[10px] text-sidebar-foreground/40 truncate px-2 mb-1">
+              {user.email}
+            </p>
+          )}
           <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handleSignOut}
+                className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                {!collapsed && <span className="text-xs">Déconnexion</span>}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <NavLink
