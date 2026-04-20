@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Gavel, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { Gavel, FileText, CheckCircle2, AlertCircle, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -59,6 +59,7 @@ export default function TribunalDecisions() {
   const [peine, setPeine] = useState("");
   const [motivation, setMotivation] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingDecision, setEditingDecision] = useState<DecisionRow | null>(null);
 
   const isJuge = role === "juge";
 
@@ -94,9 +95,19 @@ export default function TribunalDecisions() {
 
   const openDialog = (d: DossierRow) => {
     setSelected(d);
+    setEditingDecision(null);
     setVerdict("condamnation");
     setPeine("");
     setMotivation("");
+    setOpen(true);
+  };
+
+  const openEditDialog = (d: DossierRow, decision: DecisionRow) => {
+    setSelected(d);
+    setEditingDecision(decision);
+    setVerdict(decision.verdict);
+    setPeine(decision.peine ?? "");
+    setMotivation(decision.motivation ?? "");
     setOpen(true);
   };
 
@@ -107,6 +118,36 @@ export default function TribunalDecisions() {
       return;
     }
     setSubmitting(true);
+
+    if (editingDecision) {
+      const { error: upErr } = await supabase
+        .from("decisions")
+        .update({
+          verdict,
+          peine: peine || null,
+          motivation,
+        })
+        .eq("id", editingDecision.id);
+
+      if (upErr) {
+        toast.error("Erreur : " + upErr.message);
+        setSubmitting(false);
+        return;
+      }
+
+      await supabase.from("activites").insert({
+        dossier_id: selected.id,
+        user_id: user.id,
+        action: "Décision modifiée",
+        details: `${verdictLabels[verdict]}${peine ? ` — ${peine}` : ""}`,
+      });
+
+      toast.success("Décision mise à jour");
+      setOpen(false);
+      setSubmitting(false);
+      load();
+      return;
+    }
 
     const { error: decErr } = await supabase.from("decisions").insert({
       dossier_id: selected.id,
