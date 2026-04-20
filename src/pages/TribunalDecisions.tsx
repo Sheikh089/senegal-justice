@@ -248,9 +248,16 @@ export default function TribunalDecisions() {
                     <p className="text-xs font-mono text-muted-foreground">{d.reference}</p>
                     <h3 className="font-heading font-semibold text-sm text-foreground truncate">{d.titre}</h3>
                   </div>
-                  <span className={`badge-status ${verdictColors[d.decision.verdict]}`}>
-                    {verdictLabels[d.decision.verdict]}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge-status ${verdictColors[d.decision.verdict]}`}>
+                      {verdictLabels[d.decision.verdict]}
+                    </span>
+                    {isJuge && d.decision.juge_id === user?.id && (
+                      <Button size="sm" variant="outline" onClick={() => openEditDialog(d, d.decision)}>
+                        <Pencil className="h-3 w-3" /> Modifier
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {d.decision.peine && (
                   <p className="text-sm text-foreground mb-2">
@@ -274,7 +281,7 @@ export default function TribunalDecisions() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rendre une décision</DialogTitle>
+            <DialogTitle>{editingDecision ? "Modifier la décision" : "Rendre une décision"}</DialogTitle>
           </DialogHeader>
           {selected && (
             <div className="space-y-4">
@@ -325,7 +332,11 @@ export default function TribunalDecisions() {
               Annuler
             </Button>
             <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Enregistrement..." : "Enregistrer la décision"}
+              {submitting
+                ? "Enregistrement..."
+                : editingDecision
+                  ? "Mettre à jour"
+                  : "Enregistrer la décision"}
             </Button>
           </DialogFooter>
         </DialogContent>
