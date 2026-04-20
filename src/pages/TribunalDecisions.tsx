@@ -41,6 +41,7 @@ const verdictColors: Record<Verdict, string> = {
 interface DecisionRow {
   id: string;
   dossier_id: string;
+  juge_id: string;
   verdict: Verdict;
   peine: string | null;
   motivation: string | null;
