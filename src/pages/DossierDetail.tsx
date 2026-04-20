@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User } from "lucide-react";
+import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,33 @@ interface AudienceRow {
   status: string;
 }
 
+type Verdict = "relaxe" | "condamnation" | "acquittement" | "renvoi" | "classement";
+
+const verdictLabels: Record<Verdict, string> = {
+  relaxe: "Relaxe",
+  condamnation: "Condamnation",
+  acquittement: "Acquittement",
+  renvoi: "Renvoi",
+  classement: "Classement sans suite",
+};
+
+const verdictColors: Record<Verdict, string> = {
+  relaxe: "bg-success/15 text-success",
+  condamnation: "bg-destructive/15 text-destructive",
+  acquittement: "bg-success/15 text-success",
+  renvoi: "bg-warning/15 text-warning",
+  classement: "bg-muted text-muted-foreground",
+};
+
+interface DecisionRow {
+  id: string;
+  verdict: Verdict;
+  peine: string | null;
+  motivation: string | null;
+  date_decision: string;
+  juge_id: string;
+}
+
 interface Props {
   variant: "police" | "tribunal";
 }
@@ -35,6 +62,8 @@ export default function DossierDetail({ variant }: Props) {
 
   const [dossier, setDossier] = useState<DossierRow | null>(null);
   const [audience, setAudience] = useState<AudienceRow | null>(null);
+  const [decision, setDecision] = useState<DecisionRow | null>(null);
+  const [jugeName, setJugeName] = useState<string | null>(null);
   const [assignedName, setAssignedName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +82,7 @@ export default function DossierDetail({ variant }: Props) {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const [{ data: d }, { data: a }] = await Promise.all([
+      const [{ data: d }, { data: a }, { data: dec }] = await Promise.all([
         supabase.from("dossiers").select("*").eq("id", id).maybeSingle(),
         supabase
           .from("audiences")
@@ -62,9 +91,17 @@ export default function DossierDetail({ variant }: Props) {
           .order("date_audience", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from("decisions")
+          .select("id, verdict, peine, motivation, date_decision, juge_id")
+          .eq("dossier_id", id)
+          .order("date_decision", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
       setDossier(d);
       setAudience(a);
+      setDecision(dec as DecisionRow | null);
       if (d?.assigned_to) {
         const { data: p } = await supabase
           .from("profiles")
@@ -72,6 +109,14 @@ export default function DossierDetail({ variant }: Props) {
           .eq("user_id", d.assigned_to)
           .maybeSingle();
         setAssignedName(p?.full_name ?? null);
+      }
+      if (dec?.juge_id) {
+        const { data: jp } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", dec.juge_id)
+          .maybeSingle();
+        setJugeName(jp?.full_name ?? null);
       }
       setLoading(false);
     })();
@@ -189,6 +234,36 @@ export default function DossierDetail({ variant }: Props) {
             </div>
 
             <PiecesJointes dossierId={dossier.id} />
+
+            {decision && (
+              <div className="stat-card space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Scale className="h-4 w-4 text-primary" /> Décision rendue
+                  </h3>
+                  <span className={`badge-status ${verdictColors[decision.verdict]}`}>
+                    {verdictLabels[decision.verdict]}
+                  </span>
+                </div>
+                {decision.peine && (
+                  <div className="text-sm text-foreground">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Peine : </span>
+                    {decision.peine}
+                  </div>
+                )}
+                {decision.motivation && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Motivation</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{decision.motivation}</p>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1 pt-2 border-t border-border/50">
+                  <FileText className="h-3 w-3" />
+                  Rendue le {format(new Date(decision.date_decision), "dd MMMM yyyy", { locale: fr })}
+                  {jugeName && ` par ${jugeName}`}
+                </p>
+              </div>
+            )}
 
             {audience && (
               <div className="stat-card">
