@@ -149,6 +149,13 @@ export type Database = {
           description: string | null
           id: string
           lieu: string | null
+          mis_en_cause_adresse: string | null
+          mis_en_cause_date_naissance: string | null
+          mis_en_cause_lieu_naissance: string | null
+          mis_en_cause_nom: string | null
+          mis_en_cause_prenom: string | null
+          mis_en_cause_profession: string | null
+          mis_en_cause_telephone: string | null
           priority: string | null
           reference: string
           status: Database["public"]["Enums"]["dossier_status"]
@@ -164,6 +171,13 @@ export type Database = {
           description?: string | null
           id?: string
           lieu?: string | null
+          mis_en_cause_adresse?: string | null
+          mis_en_cause_date_naissance?: string | null
+          mis_en_cause_lieu_naissance?: string | null
+          mis_en_cause_nom?: string | null
+          mis_en_cause_prenom?: string | null
+          mis_en_cause_profession?: string | null
+          mis_en_cause_telephone?: string | null
           priority?: string | null
           reference: string
           status?: Database["public"]["Enums"]["dossier_status"]
@@ -179,6 +193,13 @@ export type Database = {
           description?: string | null
           id?: string
           lieu?: string | null
+          mis_en_cause_adresse?: string | null
+          mis_en_cause_date_naissance?: string | null
+          mis_en_cause_lieu_naissance?: string | null
+          mis_en_cause_nom?: string | null
+          mis_en_cause_prenom?: string | null
+          mis_en_cause_profession?: string | null
+          mis_en_cause_telephone?: string | null
           priority?: string | null
           reference?: string
           status?: Database["public"]["Enums"]["dossier_status"]
