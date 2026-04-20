@@ -159,6 +159,81 @@ export default function PoliceNouveau() {
             />
           </div>
 
+          <div className="pt-4 border-t border-border/50 space-y-4">
+            <h3 className="font-heading text-sm font-semibold text-foreground">Mis en cause</h3>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Prénom</label>
+                <input
+                  name="mis_en_cause_prenom"
+                  value={formData.mis_en_cause_prenom}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Nom</label>
+                <input
+                  name="mis_en_cause_nom"
+                  value={formData.mis_en_cause_nom}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Date de naissance</label>
+                <input
+                  type="date"
+                  name="mis_en_cause_date_naissance"
+                  value={formData.mis_en_cause_date_naissance}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Lieu de naissance</label>
+                <input
+                  name="mis_en_cause_lieu_naissance"
+                  value={formData.mis_en_cause_lieu_naissance}
+                  onChange={handleChange}
+                  placeholder="Ville, pays"
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Profession</label>
+                <input
+                  name="mis_en_cause_profession"
+                  value={formData.mis_en_cause_profession}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Téléphone</label>
+                <input
+                  type="tel"
+                  name="mis_en_cause_telephone"
+                  value={formData.mis_en_cause_telephone}
+                  onChange={handleChange}
+                  placeholder="+221 ..."
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-foreground">Adresse</label>
+                <input
+                  name="mis_en_cause_adresse"
+                  value={formData.mis_en_cause_adresse}
+                  onChange={handleChange}
+                  placeholder="Numéro, rue, quartier, ville"
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-foreground">Description des faits</label>
             <textarea
