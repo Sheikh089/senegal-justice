@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale } from "lucide-react";
+import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -234,6 +234,63 @@ export default function DossierDetail({ variant }: Props) {
             </div>
 
             <PiecesJointes dossierId={dossier.id} />
+
+            {(dossier.mis_en_cause_prenom ||
+              dossier.mis_en_cause_nom ||
+              dossier.mis_en_cause_telephone ||
+              dossier.mis_en_cause_adresse ||
+              dossier.mis_en_cause_profession ||
+              dossier.mis_en_cause_date_naissance ||
+              dossier.mis_en_cause_lieu_naissance) && (
+              <div className="stat-card space-y-3">
+                <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
+                  <UserSquare className="h-4 w-4 text-primary" /> Mis en cause
+                </h3>
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  {(dossier.mis_en_cause_prenom || dossier.mis_en_cause_nom) && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Identité</p>
+                      <p className="text-foreground">
+                        {[dossier.mis_en_cause_prenom, dossier.mis_en_cause_nom].filter(Boolean).join(" ")}
+                      </p>
+                    </div>
+                  )}
+                  {dossier.mis_en_cause_date_naissance && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Né(e) le</p>
+                      <p className="text-foreground">
+                        {format(new Date(dossier.mis_en_cause_date_naissance), "dd MMMM yyyy", { locale: fr })}
+                        {dossier.mis_en_cause_lieu_naissance && ` à ${dossier.mis_en_cause_lieu_naissance}`}
+                      </p>
+                    </div>
+                  )}
+                  {!dossier.mis_en_cause_date_naissance && dossier.mis_en_cause_lieu_naissance && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lieu de naissance</p>
+                      <p className="text-foreground">{dossier.mis_en_cause_lieu_naissance}</p>
+                    </div>
+                  )}
+                  {dossier.mis_en_cause_profession && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Profession</p>
+                      <p className="text-foreground">{dossier.mis_en_cause_profession}</p>
+                    </div>
+                  )}
+                  {dossier.mis_en_cause_telephone && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Téléphone</p>
+                      <p className="text-foreground">{dossier.mis_en_cause_telephone}</p>
+                    </div>
+                  )}
+                  {dossier.mis_en_cause_adresse && (
+                    <div className="sm:col-span-2">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Adresse</p>
+                      <p className="text-foreground">{dossier.mis_en_cause_adresse}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {decision && (
               <div className="stat-card space-y-3">

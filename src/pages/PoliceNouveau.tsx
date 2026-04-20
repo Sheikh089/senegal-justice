@@ -18,6 +18,13 @@ export default function PoliceNouveau() {
     lieu: "",
     description: "",
     priority: "normale",
+    mis_en_cause_prenom: "",
+    mis_en_cause_nom: "",
+    mis_en_cause_date_naissance: "",
+    mis_en_cause_lieu_naissance: "",
+    mis_en_cause_profession: "",
+    mis_en_cause_telephone: "",
+    mis_en_cause_adresse: "",
   });
 
   const handleChange = (
@@ -48,6 +55,13 @@ export default function PoliceNouveau() {
         priority: formData.priority,
         status: transmettre ? "transmis" : "nouveau",
         created_by: user.id,
+        mis_en_cause_prenom: formData.mis_en_cause_prenom || null,
+        mis_en_cause_nom: formData.mis_en_cause_nom || null,
+        mis_en_cause_date_naissance: formData.mis_en_cause_date_naissance || null,
+        mis_en_cause_lieu_naissance: formData.mis_en_cause_lieu_naissance || null,
+        mis_en_cause_profession: formData.mis_en_cause_profession || null,
+        mis_en_cause_telephone: formData.mis_en_cause_telephone || null,
+        mis_en_cause_adresse: formData.mis_en_cause_adresse || null,
       })
       .select()
       .single();
@@ -143,6 +157,81 @@ export default function PoliceNouveau() {
               placeholder="Quartier, ville..."
               className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
             />
+          </div>
+
+          <div className="pt-4 border-t border-border/50 space-y-4">
+            <h3 className="font-heading text-sm font-semibold text-foreground">Mis en cause</h3>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Prénom</label>
+                <input
+                  name="mis_en_cause_prenom"
+                  value={formData.mis_en_cause_prenom}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Nom</label>
+                <input
+                  name="mis_en_cause_nom"
+                  value={formData.mis_en_cause_nom}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Date de naissance</label>
+                <input
+                  type="date"
+                  name="mis_en_cause_date_naissance"
+                  value={formData.mis_en_cause_date_naissance}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Lieu de naissance</label>
+                <input
+                  name="mis_en_cause_lieu_naissance"
+                  value={formData.mis_en_cause_lieu_naissance}
+                  onChange={handleChange}
+                  placeholder="Ville, pays"
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Profession</label>
+                <input
+                  name="mis_en_cause_profession"
+                  value={formData.mis_en_cause_profession}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Téléphone</label>
+                <input
+                  type="tel"
+                  name="mis_en_cause_telephone"
+                  value={formData.mis_en_cause_telephone}
+                  onChange={handleChange}
+                  placeholder="+221 ..."
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-foreground">Adresse</label>
+                <input
+                  name="mis_en_cause_adresse"
+                  value={formData.mis_en_cause_adresse}
+                  onChange={handleChange}
+                  placeholder="Numéro, rue, quartier, ville"
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-1.5">
