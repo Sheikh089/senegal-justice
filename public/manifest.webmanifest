@@ -1,0 +1,26 @@
+{
+  "name": "JusticeLink — Plateforme Judiciaire Unifiée",
+  "short_name": "JusticeLink",
+  "description": "JusticeLink relie en temps réel la police et les tribunaux pour une justice plus rapide et plus fiable.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
