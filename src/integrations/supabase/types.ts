@@ -151,8 +151,13 @@ export type Database = {
           lieu: string | null
           mis_en_cause_adresse: string | null
           mis_en_cause_date_naissance: string | null
+          mis_en_cause_empreinte_droite: string | null
+          mis_en_cause_empreinte_gauche: string | null
           mis_en_cause_lieu_naissance: string | null
           mis_en_cause_nom: string | null
+          mis_en_cause_photo_droite: string | null
+          mis_en_cause_photo_face: string | null
+          mis_en_cause_photo_gauche: string | null
           mis_en_cause_prenom: string | null
           mis_en_cause_profession: string | null
           mis_en_cause_telephone: string | null
@@ -173,8 +178,13 @@ export type Database = {
           lieu?: string | null
           mis_en_cause_adresse?: string | null
           mis_en_cause_date_naissance?: string | null
+          mis_en_cause_empreinte_droite?: string | null
+          mis_en_cause_empreinte_gauche?: string | null
           mis_en_cause_lieu_naissance?: string | null
           mis_en_cause_nom?: string | null
+          mis_en_cause_photo_droite?: string | null
+          mis_en_cause_photo_face?: string | null
+          mis_en_cause_photo_gauche?: string | null
           mis_en_cause_prenom?: string | null
           mis_en_cause_profession?: string | null
           mis_en_cause_telephone?: string | null
@@ -195,8 +205,13 @@ export type Database = {
           lieu?: string | null
           mis_en_cause_adresse?: string | null
           mis_en_cause_date_naissance?: string | null
+          mis_en_cause_empreinte_droite?: string | null
+          mis_en_cause_empreinte_gauche?: string | null
           mis_en_cause_lieu_naissance?: string | null
           mis_en_cause_nom?: string | null
+          mis_en_cause_photo_droite?: string | null
+          mis_en_cause_photo_face?: string | null
+          mis_en_cause_photo_gauche?: string | null
           mis_en_cause_prenom?: string | null
           mis_en_cause_profession?: string | null
           mis_en_cause_telephone?: string | null
