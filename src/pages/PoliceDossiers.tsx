@@ -165,13 +165,15 @@ export default function PoliceDossiers() {
                       <span className="text-xs font-mono text-muted-foreground">{d.reference}</span>
                     </div>
                     <div className="flex gap-1.5">
-                      <PrioriteBadge priorite={d.priority ?? "normale"} />
-                      <StatusBadge statut={d.status} />
+                      {columns.priority && <PrioriteBadge priorite={d.priority ?? "normale"} />}
+                      {columns.status && <StatusBadge statut={d.status} />}
                     </div>
                   </div>
-                  <h3 className="font-heading font-semibold text-sm text-foreground mb-2 hover:text-primary transition-colors">
-                    {d.titre}
-                  </h3>
+                  {columns.titre && (
+                    <h3 className="font-heading font-semibold text-sm text-foreground mb-2 hover:text-primary transition-colors">
+                      {d.titre}
+                    </h3>
+                  )}
                   {d.description && (
                     <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{d.description}</p>
                   )}
@@ -190,7 +192,7 @@ export default function PoliceDossiers() {
                       <Calendar className="h-3 w-3" />
                       {new Date(d.created_at).toLocaleDateString("fr-FR")}
                     </span>
-                    {d.assigned_name && (
+                    {columns.assignee && d.assigned_name && (
                       <span className="flex items-center gap-1 text-primary">
                         <UserCheck className="h-3 w-3" />
                         {d.assigned_name}
