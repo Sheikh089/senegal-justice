@@ -7,9 +7,16 @@ import type { DossierRow } from "@/lib/dossier-helpers";
 import { enrichDossiersWithAssignee } from "@/lib/dossier-assignee";
 import {
   Search, Filter, FileText, Pencil, Trash2, Send, Archive,
-  MapPin, Calendar, Paperclip, UserCheck,
+  MapPin, Calendar, Paperclip, UserCheck, Columns3, LayoutGrid, List,
 } from "lucide-react";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
+import {
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -21,6 +28,20 @@ import { useToast } from "@/hooks/use-toast";
 
 type EnrichedDossier = DossierRow & { assigned_name?: string | null; assigned_role?: string | null };
 type Procureur = { user_id: string; full_name: string };
+
+type ColumnKey = "titre" | "reference" | "status" | "priority" | "assignee";
+const COLUMN_DEFS: { key: ColumnKey; label: string }[] = [
+  { key: "titre", label: "Titre" },
+  { key: "reference", label: "Référence" },
+  { key: "status", label: "Statut" },
+  { key: "priority", label: "Priorité" },
+  { key: "assignee", label: "Assigné à" },
+];
+const DEFAULT_COLS: Record<ColumnKey, boolean> = {
+  titre: true, reference: true, status: true, priority: true, assignee: true,
+};
+const COLS_STORAGE = "police_dossiers_columns";
+const VIEW_STORAGE = "police_dossiers_view";
 
 export default function PoliceDossiers() {
   const { user } = useAuth();
@@ -34,6 +55,30 @@ export default function PoliceDossiers() {
   const [procureurs, setProcureurs] = useState<Procureur[]>([]);
   const [selectedProcureur, setSelectedProcureur] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem(COLS_STORAGE);
+      if (raw) return { ...DEFAULT_COLS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_COLS;
+  });
+  const [view, setView] = useState<"cards" | "table">(() => {
+    try {
+      const v = localStorage.getItem(VIEW_STORAGE);
+      if (v === "table" || v === "cards") return v;
+    } catch {}
+    return "cards";
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(COLS_STORAGE, JSON.stringify(columns)); } catch {}
+  }, [columns]);
+  useEffect(() => {
+    try { localStorage.setItem(VIEW_STORAGE, view); } catch {}
+  }, [view]);
+
+  const toggleColumn = (key: ColumnKey) =>
+    setColumns((c) => ({ ...c, [key]: !c[key] }));
 
   const load = async () => {
     if (!user) return;
@@ -141,10 +186,48 @@ export default function PoliceDossiers() {
               className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
             />
           </div>
+          <div className="flex rounded-lg border border-input bg-card overflow-hidden">
+            <button
+              onClick={() => setView("cards")}
+              className={`px-3 py-2.5 text-sm flex items-center transition-colors ${view === "cards" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
+              title="Vue cartes"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setView("table")}
+              className={`px-3 py-2.5 text-sm flex items-center transition-colors ${view === "table" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
+              title="Vue tableau"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="px-4 py-2.5 rounded-lg border border-input bg-card text-muted-foreground hover:bg-muted transition-colors flex items-center gap-2 text-sm">
+                <Columns3 className="h-4 w-4" /> Colonnes
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Colonnes affichées</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {COLUMN_DEFS.map((col) => (
+                <DropdownMenuCheckboxItem
+                  key={col.key}
+                  checked={columns[col.key]}
+                  onCheckedChange={() => toggleColumn(col.key)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {col.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button className="px-4 py-2.5 rounded-lg border border-input bg-card text-muted-foreground hover:bg-muted transition-colors flex items-center gap-2 text-sm">
             <Filter className="h-4 w-4" /> Filtrer
           </button>
         </div>
+        {view === "cards" && (
         <div className="space-y-3">
           {loading && <p className="text-xs text-muted-foreground">Chargement...</p>}
           {!loading && filtered.length === 0 && (
@@ -165,13 +248,15 @@ export default function PoliceDossiers() {
                       <span className="text-xs font-mono text-muted-foreground">{d.reference}</span>
                     </div>
                     <div className="flex gap-1.5">
-                      <PrioriteBadge priorite={d.priority ?? "normale"} />
-                      <StatusBadge statut={d.status} />
+                      {columns.priority && <PrioriteBadge priorite={d.priority ?? "normale"} />}
+                      {columns.status && <StatusBadge statut={d.status} />}
                     </div>
                   </div>
-                  <h3 className="font-heading font-semibold text-sm text-foreground mb-2 hover:text-primary transition-colors">
-                    {d.titre}
-                  </h3>
+                  {columns.titre && (
+                    <h3 className="font-heading font-semibold text-sm text-foreground mb-2 hover:text-primary transition-colors">
+                      {d.titre}
+                    </h3>
+                  )}
                   {d.description && (
                     <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{d.description}</p>
                   )}
@@ -190,7 +275,7 @@ export default function PoliceDossiers() {
                       <Calendar className="h-3 w-3" />
                       {new Date(d.created_at).toLocaleDateString("fr-FR")}
                     </span>
-                    {d.assigned_name && (
+                    {columns.assignee && d.assigned_name && (
                       <span className="flex items-center gap-1 text-primary">
                         <UserCheck className="h-3 w-3" />
                         {d.assigned_name}
@@ -236,6 +321,99 @@ export default function PoliceDossiers() {
             );
           })}
         </div>
+        )}
+
+        {view === "table" && (
+          <div className="rounded-lg border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.titre && <TableHead>Titre</TableHead>}
+                  {columns.reference && <TableHead>Référence</TableHead>}
+                  {columns.status && <TableHead>Statut</TableHead>}
+                  {columns.priority && <TableHead>Priorité</TableHead>}
+                  {columns.assignee && <TableHead>Assigné à</TableHead>}
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-xs text-muted-foreground">Chargement...</TableCell>
+                  </TableRow>
+                )}
+                {!loading && filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-xs text-muted-foreground">Aucun dossier trouvé.</TableCell>
+                  </TableRow>
+                )}
+                {filtered.map((d) => {
+                  const canTransmit = d.status === "nouveau" || d.status === "en_cours";
+                  const isArchived = d.status === "archive";
+                  return (
+                    <TableRow key={d.id} className="cursor-pointer" onClick={() => navigate(`/police/dossiers/${d.id}`)}>
+                      {columns.titre && (
+                        <TableCell className="font-medium text-sm">{d.titre}</TableCell>
+                      )}
+                      {columns.reference && (
+                        <TableCell className="font-mono text-xs text-muted-foreground">{d.reference}</TableCell>
+                      )}
+                      {columns.status && (
+                        <TableCell><StatusBadge statut={d.status} /></TableCell>
+                      )}
+                      {columns.priority && (
+                        <TableCell><PrioriteBadge priorite={d.priority ?? "normale"} /></TableCell>
+                      )}
+                      {columns.assignee && (
+                        <TableCell className="text-xs">
+                          {d.assigned_name ? (
+                            <span className="text-primary">{d.assigned_name}{d.assigned_role && <span className="text-muted-foreground"> ({d.assigned_role})</span>}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          {canTransmit && (
+                            <button
+                              onClick={() => openTransmit(d)}
+                              className="p-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                              title="Transmettre"
+                            >
+                              <Send className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          {!isArchived && (
+                            <button
+                              onClick={() => navigate(`/police/dossiers/${d.id}/editer`)}
+                              className="p-1.5 rounded-md border border-input hover:bg-muted transition-colors"
+                              title="Modifier"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          {!isArchived && (
+                            <button
+                              onClick={() => setDeleteTarget(d)}
+                              className="p-1.5 rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          {isArchived && (
+                            <Archive className="h-3.5 w-3.5 text-muted-foreground inline" />
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
       <Dialog open={!!transmitTarget} onOpenChange={(open) => { if (!open) { setTransmitTarget(null); setSelectedProcureur(""); } }}>
