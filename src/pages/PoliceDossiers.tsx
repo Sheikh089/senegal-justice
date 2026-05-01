@@ -7,9 +7,16 @@ import type { DossierRow } from "@/lib/dossier-helpers";
 import { enrichDossiersWithAssignee } from "@/lib/dossier-assignee";
 import {
   Search, Filter, FileText, Pencil, Trash2, Send, Archive,
-  MapPin, Calendar, Paperclip, UserCheck,
+  MapPin, Calendar, Paperclip, UserCheck, Columns3, LayoutGrid, List,
 } from "lucide-react";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
+import {
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -21,6 +28,20 @@ import { useToast } from "@/hooks/use-toast";
 
 type EnrichedDossier = DossierRow & { assigned_name?: string | null; assigned_role?: string | null };
 type Procureur = { user_id: string; full_name: string };
+
+type ColumnKey = "titre" | "reference" | "status" | "priority" | "assignee";
+const COLUMN_DEFS: { key: ColumnKey; label: string }[] = [
+  { key: "titre", label: "Titre" },
+  { key: "reference", label: "Référence" },
+  { key: "status", label: "Statut" },
+  { key: "priority", label: "Priorité" },
+  { key: "assignee", label: "Assigné à" },
+];
+const DEFAULT_COLS: Record<ColumnKey, boolean> = {
+  titre: true, reference: true, status: true, priority: true, assignee: true,
+};
+const COLS_STORAGE = "police_dossiers_columns";
+const VIEW_STORAGE = "police_dossiers_view";
 
 export default function PoliceDossiers() {
   const { user } = useAuth();
@@ -34,6 +55,30 @@ export default function PoliceDossiers() {
   const [procureurs, setProcureurs] = useState<Procureur[]>([]);
   const [selectedProcureur, setSelectedProcureur] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem(COLS_STORAGE);
+      if (raw) return { ...DEFAULT_COLS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_COLS;
+  });
+  const [view, setView] = useState<"cards" | "table">(() => {
+    try {
+      const v = localStorage.getItem(VIEW_STORAGE);
+      if (v === "table" || v === "cards") return v;
+    } catch {}
+    return "cards";
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(COLS_STORAGE, JSON.stringify(columns)); } catch {}
+  }, [columns]);
+  useEffect(() => {
+    try { localStorage.setItem(VIEW_STORAGE, view); } catch {}
+  }, [view]);
+
+  const toggleColumn = (key: ColumnKey) =>
+    setColumns((c) => ({ ...c, [key]: !c[key] }));
 
   const load = async () => {
     if (!user) return;
