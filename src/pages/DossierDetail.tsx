@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint } from "lucide-react";
+import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { DossierRow } from "@/lib/dossier-helpers";
 import { PiecesJointes } from "@/components/PiecesJointes";
 import { getDossierMediaUrls, BIOMETRIC_LABELS, type BiometricKey } from "@/lib/dossier-media";
+import { generateDossierPdf } from "@/lib/dossier-pdf";
 
 interface AudienceRow {
   id: string;
@@ -68,6 +69,7 @@ export default function DossierDetail({ variant }: Props) {
   const [assignedName, setAssignedName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mediaUrls, setMediaUrls] = useState<Partial<Record<BiometricKey, string>>>({});
+  const [exporting, setExporting] = useState(false);
 
   // Form state
   const [date, setDate] = useState<Date | undefined>();
@@ -189,12 +191,33 @@ export default function DossierDetail({ variant }: Props) {
 
   const backTo = variant === "police" ? "/police/dossiers" : "/tribunal/dossiers";
 
+  const handleExportPdf = async () => {
+    if (!dossier) return;
+    setExporting(true);
+    try {
+      await generateDossierPdf(dossier, { assignedName });
+      toast.success("PDF généré");
+    } catch (e) {
+      toast.error("Erreur lors de la génération du PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <DashboardLayout variant={variant} title="Détail du dossier">
       <div className="space-y-6 animate-fade-in max-w-4xl">
-        <Button variant="ghost" size="sm" onClick={() => navigate(backTo)} className="gap-2">
-          <ArrowLeft className="h-4 w-4" /> Retour
-        </Button>
+        <div className="flex items-center justify-between gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(backTo)} className="gap-2">
+            <ArrowLeft className="h-4 w-4" /> Retour
+          </Button>
+          {dossier && (
+            <Button size="sm" onClick={handleExportPdf} disabled={exporting} className="gap-2">
+              <Download className="h-4 w-4" />
+              {exporting ? "Génération..." : "Exporter PDF"}
+            </Button>
+          )}
+        </div>
 
         {loading && <p className="text-sm text-muted-foreground">Chargement...</p>}
 
