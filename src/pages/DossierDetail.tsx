@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare } from "lucide-react";
+import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { DossierRow } from "@/lib/dossier-helpers";
 import { PiecesJointes } from "@/components/PiecesJointes";
+import { getDossierMediaUrls, BIOMETRIC_LABELS, type BiometricKey } from "@/lib/dossier-media";
 
 interface AudienceRow {
   id: string;
@@ -66,6 +67,7 @@ export default function DossierDetail({ variant }: Props) {
   const [jugeName, setJugeName] = useState<string | null>(null);
   const [assignedName, setAssignedName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mediaUrls, setMediaUrls] = useState<Partial<Record<BiometricKey, string>>>({});
 
   // Form state
   const [date, setDate] = useState<Date | undefined>();
@@ -117,6 +119,10 @@ export default function DossierDetail({ variant }: Props) {
           .eq("user_id", dec.juge_id)
           .maybeSingle();
         setJugeName(jp?.full_name ?? null);
+      }
+      if (d) {
+        const urls = await getDossierMediaUrls(d);
+        setMediaUrls(urls);
       }
       setLoading(false);
     })();
@@ -234,6 +240,46 @@ export default function DossierDetail({ variant }: Props) {
             </div>
 
             <PiecesJointes dossierId={dossier.id} />
+
+            {Object.keys(mediaUrls).length > 0 && (
+              <div className="stat-card space-y-3">
+                <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-primary" /> Photos & empreintes
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {(Object.keys(BIOMETRIC_LABELS) as BiometricKey[]).map((k) => {
+                    const url = mediaUrls[k];
+                    if (!url) return null;
+                    const isFinger = k.startsWith("mis_en_cause_empreinte");
+                    return (
+                      <a
+                        key={k}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block group space-y-1.5"
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden border border-input bg-muted">
+                          <img
+                            src={url}
+                            alt={BIOMETRIC_LABELS[k]}
+                            className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                          />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          {isFinger ? (
+                            <Fingerprint className="h-3 w-3" />
+                          ) : (
+                            <Camera className="h-3 w-3" />
+                          )}
+                          {BIOMETRIC_LABELS[k]}
+                        </p>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {(dossier.mis_en_cause_prenom ||
               dossier.mis_en_cause_nom ||
