@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download } from "lucide-react";
+import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download, Archive } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,7 @@ export default function DossierDetail({ variant }: Props) {
   const [loading, setLoading] = useState(true);
   const [mediaUrls, setMediaUrls] = useState<Partial<Record<BiometricKey, string>>>({});
   const [exporting, setExporting] = useState(false);
+  const [archiving, setArchiving] = useState(false);
 
   // Form state
   const [date, setDate] = useState<Date | undefined>();
@@ -204,6 +205,42 @@ export default function DossierDetail({ variant }: Props) {
     }
   };
 
+  const handleArchivePdf = async () => {
+    if (!dossier || !user) return;
+    setArchiving(true);
+    try {
+      const blob = (await generateDossierPdf(dossier, { assignedName, output: "blob" })) as Blob;
+      const fileName = `dossier-${dossier.reference}-${Date.now()}.pdf`;
+      const path = `${dossier.id}/archives/${fileName}`;
+      const { error: upErr } = await supabase.storage
+        .from("dossier-files")
+        .upload(path, blob, { contentType: "application/pdf" });
+      if (upErr) throw upErr;
+
+      const { error: dbErr } = await supabase.from("pieces_jointes").insert({
+        dossier_id: dossier.id,
+        nom: fileName,
+        type: "application/pdf",
+        url: path,
+        uploaded_by: user.id,
+      });
+      if (dbErr) throw dbErr;
+
+      await supabase.from("activites").insert({
+        dossier_id: dossier.id,
+        user_id: user.id,
+        action: "PDF archivé",
+        details: fileName,
+      });
+
+      toast.success("PDF archivé dans le dossier");
+    } catch (e: any) {
+      toast.error("Erreur archivage : " + (e?.message ?? "inconnue"));
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   return (
     <DashboardLayout variant={variant} title="Détail du dossier">
       <div className="space-y-6 animate-fade-in max-w-4xl">
@@ -212,10 +249,22 @@ export default function DossierDetail({ variant }: Props) {
             <ArrowLeft className="h-4 w-4" /> Retour
           </Button>
           {dossier && (
-            <Button size="sm" onClick={handleExportPdf} disabled={exporting} className="gap-2">
-              <Download className="h-4 w-4" />
-              {exporting ? "Génération..." : "Exporter PDF"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleArchivePdf}
+                disabled={archiving}
+                className="gap-2"
+              >
+                <Archive className="h-4 w-4" />
+                {archiving ? "Archivage..." : "Archiver PDF"}
+              </Button>
+              <Button size="sm" onClick={handleExportPdf} disabled={exporting} className="gap-2">
+                <Download className="h-4 w-4" />
+                {exporting ? "Génération..." : "Exporter PDF"}
+              </Button>
+            </div>
           )}
         </div>
 

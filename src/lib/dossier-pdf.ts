@@ -21,8 +21,8 @@ async function urlToDataUrl(url: string): Promise<{ data: string; format: "JPEG"
 
 export async function generateDossierPdf(
   dossier: DossierRow,
-  opts: { assignedName?: string | null } = {}
-): Promise<void> {
+  opts: { assignedName?: string | null; output?: "save" | "blob" } = {}
+): Promise<Blob | void> {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -188,5 +188,8 @@ export async function generateDossierPdf(
     );
   }
 
+  if (opts.output === "blob") {
+    return doc.output("blob");
+  }
   doc.save(`dossier-${dossier.reference}.pdf`);
 }
