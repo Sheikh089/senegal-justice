@@ -12,6 +12,7 @@ import {
   ScanLine,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,6 +40,7 @@ export default function PoliceNouveau() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Caméra
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -236,7 +238,9 @@ export default function PoliceNouveau() {
 
   const save = async (transmettre: boolean) => {
     if (!user) return;
+    setErrorMsg(null);
     if (!formData.titre || !formData.type_infraction) {
+      setErrorMsg("Renseigne au moins le titre et le type d'infraction.");
       toast({
         title: "Champs requis",
         description: "Renseigne au moins le titre et le type d'infraction.",
@@ -268,6 +272,7 @@ export default function PoliceNouveau() {
       .single();
 
     if (error) {
+      setErrorMsg(error.message);
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
       setSaving(false);
       return;
@@ -673,16 +678,32 @@ export default function PoliceNouveau() {
               disabled={saving}
               className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <FilePlus className="h-4 w-4" /> Enregistrer
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
+              {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
             <button
               onClick={() => save(true)}
               disabled={saving}
               className="px-4 py-2.5 rounded-lg border border-input text-muted-foreground text-sm hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-50"
             >
-              <Send className="h-4 w-4" /> Enregistrer et transmettre
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {saving ? "Transmission..." : "Enregistrer et transmettre"}
             </button>
           </div>
+
+          {errorMsg && (
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-sm">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {saving && !errorMsg && (
+            <div className="flex items-center gap-2 p-3 rounded-lg border border-input bg-muted/50 text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Enregistrement du dossier en cours, veuillez patienter…</span>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
