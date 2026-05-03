@@ -311,7 +311,7 @@ export default function PoliceNouveau() {
 
   return (
     <DashboardLayout variant="police" title="Nouveau dossier">
-      <div className="w-full animate-fade-in px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
+      <div className="w-full max-w-5xl mx-auto animate-fade-in px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
         <div className="stat-card space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-border/50">
             <div className="p-2 rounded-lg bg-primary/10">
