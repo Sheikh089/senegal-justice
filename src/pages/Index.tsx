@@ -1,10 +1,20 @@
 import { motion } from "framer-motion";
 import { Shield, Scale, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import dashboardHero from "@/assets/dashboard-hero.png";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Hero Banner */}
+      <div className="w-full">
+        <img
+          src={dashboardHero}
+          alt="Plateforme Judiciaire Unifiée — Portail d'accès national JusticeLink"
+          className="w-full h-auto object-cover"
+        />
+      </div>
+
       {/* Header */}
       <header className="py-6 px-8 flex items-center justify-between">
         <div className="flex items-center gap-2">
