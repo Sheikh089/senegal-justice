@@ -103,6 +103,23 @@ export function PiecesJointes({ dossierId }: Props) {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
+  const handleDownload = async (e: React.MouseEvent, piece: PieceRow) => {
+    e.stopPropagation();
+    const { data, error } = await supabase.storage
+      .from("dossier-files")
+      .createSignedUrl(piece.url, 60 * 5, { download: piece.nom });
+    if (error || !data) {
+      toast.error("Impossible de télécharger le fichier");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = piece.nom;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   return (
     <div className="stat-card space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -159,7 +176,16 @@ export function PiecesJointes({ dossierId }: Props) {
                   {new Date(p.created_at).toLocaleDateString("fr-FR")} · {p.type ?? "fichier"}
                 </p>
               </div>
-              <Download className="h-4 w-4 text-muted-foreground" />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => handleDownload(e, p)}
+                className="gap-1.5"
+                title="Télécharger"
+              >
+                <Download className="h-4 w-4" />
+                Télécharger
+              </Button>
             </button>
           );
         })}
