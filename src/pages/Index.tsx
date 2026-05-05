@@ -16,7 +16,7 @@ const Index = () => {
       </div>
 
       {/* Main */}
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
+      <main className="flex justify-center px-6 -mt-16 sm:-mt-24 relative z-10">
         <div className="max-w-3xl w-full">
           <div className="grid sm:grid-cols-2 gap-6">
             {/* Police Module */}
