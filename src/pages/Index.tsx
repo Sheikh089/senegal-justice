@@ -15,33 +15,9 @@ const Index = () => {
         />
       </div>
 
-      {/* Header */}
-      <header className="py-6 px-8 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Scale className="h-6 w-6 text-accent" />
-          <span className="font-heading font-bold text-foreground text-lg">JusticeLink</span>
-        </div>
-        <span className="text-xs text-muted-foreground uppercase tracking-widest">Innovation Judiciaire</span>
-      </header>
-
       {/* Main */}
-      <main className="flex-1 flex items-center justify-center px-6 pb-12">
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="max-w-3xl w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <h1 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Plateforme Judiciaire <span className="gold-accent">Unifiée</span>
-            </h1>
-            <p className="text-muted-foreground max-w-lg mx-auto text-sm leading-relaxed">
-              Centralisez les dossiers, accélérez les procédures et éliminez les pertes documentaires
-              pour une justice plus rapide et plus fiable.
-            </p>
-          </motion.div>
-
           <div className="grid sm:grid-cols-2 gap-6">
             {/* Police Module */}
             <motion.div
