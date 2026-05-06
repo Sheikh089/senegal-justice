@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download, Archive } from "lucide-react";
+import { DossierChat } from "@/components/DossierChat";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ export default function DossierDetail({ variant }: Props) {
   const [decision, setDecision] = useState<DecisionRow | null>(null);
   const [jugeName, setJugeName] = useState<string | null>(null);
   const [assignedName, setAssignedName] = useState<string | null>(null);
+  const [creatorName, setCreatorName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mediaUrls, setMediaUrls] = useState<Partial<Record<BiometricKey, string>>>({});
   const [exporting, setExporting] = useState(false);
@@ -114,6 +116,14 @@ export default function DossierDetail({ variant }: Props) {
           .eq("user_id", d.assigned_to)
           .maybeSingle();
         setAssignedName(p?.full_name ?? null);
+      }
+      if (d?.created_by) {
+        const { data: cp } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", d.created_by)
+          .maybeSingle();
+        setCreatorName(cp?.full_name ?? null);
       }
       if (dec?.juge_id) {
         const { data: jp } = await supabase
@@ -312,6 +322,20 @@ export default function DossierDetail({ variant }: Props) {
             </div>
 
             <PiecesJointes dossierId={dossier.id} />
+
+            <DossierChat
+              dossierId={dossier.id}
+              peerId={
+                variant === "police"
+                  ? dossier.assigned_to ?? null
+                  : dossier.created_by ?? null
+              }
+              peerName={
+                variant === "police"
+                  ? assignedName ?? "Procureur (non assigné)"
+                  : creatorName ?? "Officier de police"
+              }
+            />
 
             {Object.keys(mediaUrls).length > 0 && (
               <div className="stat-card space-y-3">
