@@ -364,8 +364,7 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 bg-muted/20" viewportRef={undefined as any}>
-        <div ref={scrollRef} className="h-full max-h-[440px] overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} className="flex-1 bg-muted/20 overflow-y-auto p-4 space-y-4">
           {loading && (
             <p className="text-xs text-muted-foreground text-center py-8">Chargement...</p>
           )}
@@ -493,8 +492,7 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
               })}
             </div>
           ))}
-        </div>
-      </ScrollArea>
+      </div>
 
       {/* Composer */}
       <div className="border-t border-border p-3 bg-card">
