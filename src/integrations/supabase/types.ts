@@ -96,6 +96,42 @@ export type Database = {
           },
         ]
       }
+      call_signals: {
+        Row: {
+          call_id: string
+          call_kind: string
+          created_at: string
+          dossier_id: string
+          from_user: string
+          id: string
+          payload: Json | null
+          to_user: string
+          type: string
+        }
+        Insert: {
+          call_id: string
+          call_kind?: string
+          created_at?: string
+          dossier_id: string
+          from_user: string
+          id?: string
+          payload?: Json | null
+          to_user: string
+          type: string
+        }
+        Update: {
+          call_id?: string
+          call_kind?: string
+          created_at?: string
+          dossier_id?: string
+          from_user?: string
+          id?: string
+          payload?: Json | null
+          to_user?: string
+          type?: string
+        }
+        Relationships: []
+      }
       decisions: {
         Row: {
           created_at: string
@@ -224,6 +260,51 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string | null
+          created_at: string
+          dossier_id: string
+          duration_ms: number | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          kind: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          dossier_id: string
+          duration_ms?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          dossier_id?: string
+          duration_ms?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: []
+      }
       pieces_jointes: {
         Row: {
           created_at: string
@@ -315,6 +396,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_dossier_access: {
+        Args: { _dossier_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
