@@ -86,6 +86,7 @@ export function useWebRTCCall({ dossierId, selfId, peerId }: Params) {
     localStreamRef.current = null;
     remoteStreamRef.current = null;
     pendingIceRef.current = [];
+    pendingOfferRef.current = null;
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
