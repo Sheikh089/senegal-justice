@@ -35,6 +35,7 @@ export function useWebRTCCall({ dossierId, selfId, peerId }: Params) {
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingIceRef = useRef<RTCIceCandidateInit[]>([]);
+  const pendingOfferRef = useRef<{ from: string; sdp: RTCSessionDescriptionInit; ck: CallKind; cId: string } | null>(null);
   const callKindRef = useRef<CallKind>("audio");
   const callIdRef = useRef<string | null>(null);
   const peerIdRef = useRef<string | null>(peerId);
@@ -180,14 +181,31 @@ export function useWebRTCCall({ dossierId, selfId, peerId }: Params) {
     if (!callIdRef.current || !incomingFrom) return;
     try {
       setStatus("connecting");
-      await startLocalStream(callKindRef.current);
+      const stream = await startLocalStream(callKindRef.current);
+      const pending = pendingOfferRef.current;
+      if (pending && pending.cId === callIdRef.current) {
+        const pc = buildPc(pending.cId, pending.from, pending.ck);
+        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+        await pc.setRemoteDescription(new RTCSessionDescription(pending.sdp));
+        for (const c of pendingIceRef.current) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(c));
+          } catch {}
+        }
+        pendingIceRef.current = [];
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await sendSignal("answer", pending.from, answer, pending.cId, pending.ck);
+        pendingOfferRef.current = null;
+      }
     } catch (err: any) {
       toast.error("Accès micro/caméra refusé");
-      await sendSignal("reject", incomingFrom, null, callIdRef.current, callKindRef.current);
+      if (callIdRef.current && incomingFrom) {
+        await sendSignal("reject", incomingFrom, null, callIdRef.current, callKindRef.current);
+      }
       endCall(false);
     }
-    // Offer arrives via signal handler; if it already arrived we'll process when localStream ready.
-  }, [endCall, incomingFrom, sendSignal]);
+  }, [buildPc, endCall, incomingFrom, sendSignal]);
 
   const rejectCall = useCallback(async () => {
     if (callIdRef.current && incomingFrom) {
@@ -273,28 +291,31 @@ export function useWebRTCCall({ dossierId, selfId, peerId }: Params) {
           if (!isCurrent) return;
 
           if (sig.type === "offer") {
-            // Wait for local stream if needed
-            const waitFor = async () => {
-              for (let i = 0; i < 50 && !localStreamRef.current; i++) {
-                await new Promise((r) => setTimeout(r, 100));
+            // If we already have a local stream (already accepted), proceed.
+            if (localStreamRef.current) {
+              const pc = buildPc(sig.call_id, sig.from_user, sig.call_kind);
+              localStreamRef.current.getTracks().forEach((t) =>
+                pc.addTrack(t, localStreamRef.current!),
+              );
+              await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+              for (const c of pendingIceRef.current) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(c));
+                } catch {}
               }
-            };
-            await waitFor();
-            if (!localStreamRef.current) return;
-            const pc = buildPc(sig.call_id, sig.from_user, sig.call_kind);
-            localStreamRef.current.getTracks().forEach((t) =>
-              pc.addTrack(t, localStreamRef.current!),
-            );
-            await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
-            for (const c of pendingIceRef.current) {
-              try {
-                await pc.addIceCandidate(new RTCIceCandidate(c));
-              } catch {}
+              pendingIceRef.current = [];
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              await sendSignal("answer", sig.from_user, answer, sig.call_id, sig.call_kind);
+            } else {
+              // Stash for acceptCall
+              pendingOfferRef.current = {
+                from: sig.from_user,
+                sdp: sig.payload,
+                ck: sig.call_kind,
+                cId: sig.call_id,
+              };
             }
-            pendingIceRef.current = [];
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            await sendSignal("answer", sig.from_user, answer, sig.call_id, sig.call_kind);
           } else if (sig.type === "answer") {
             await pcRef.current?.setRemoteDescription(new RTCSessionDescription(sig.payload));
           } else if (sig.type === "ice") {
