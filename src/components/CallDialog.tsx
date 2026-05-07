@@ -25,7 +25,14 @@ export function CallDialog({ call, peerName }: Props) {
   }[call.status];
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && call.endCall(true)}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (o) return;
+        if (call.status === "ringing-in") call.rejectCall();
+        else call.endCall(true);
+      }}
+    >
       <DialogContent className="max-w-2xl p-0 overflow-hidden bg-card border-border">
         <div className="relative bg-gradient-to-br from-primary/20 via-background to-background min-h-[420px] flex flex-col">
           {isVideo ? (
