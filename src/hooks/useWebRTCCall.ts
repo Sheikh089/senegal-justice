@@ -201,16 +201,44 @@ export function useWebRTCCall({ dossierId, selfId, peerId }: Params) {
   }, [cleanup, incomingFrom, sendSignal]);
 
   const toggleMute = useCallback(() => {
-    const tracks = localStreamRef.current?.getAudioTracks() ?? [];
-    tracks.forEach((t) => (t.enabled = muted));
-    setMuted((m) => !m);
-  }, [muted]);
+    setMuted((prev) => {
+      const next = !prev;
+      localStreamRef.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
+      return next;
+    });
+  }, []);
 
   const toggleCamera = useCallback(() => {
-    const tracks = localStreamRef.current?.getVideoTracks() ?? [];
-    tracks.forEach((t) => (t.enabled = cameraOff));
-    setCameraOff((c) => !c);
-  }, [cameraOff]);
+    setCameraOff((prev) => {
+      const next = !prev;
+      localStreamRef.current?.getVideoTracks().forEach((t) => (t.enabled = !next));
+      return next;
+    });
+  }, []);
+
+  // Auto-cancel outgoing call if peer doesn't answer within 35s
+  useEffect(() => {
+    if (status !== "ringing-out") return;
+    const t = window.setTimeout(() => {
+      toast.info("Pas de réponse");
+      endCall(true);
+    }, 35000);
+    return () => window.clearTimeout(t);
+  }, [status, endCall]);
+
+  // End any ongoing call when the consumer unmounts
+  useEffect(() => {
+    return () => {
+      if (callIdRef.current && peerIdRef.current) {
+        // Best-effort hangup notify
+        sendSignal("hangup", peerIdRef.current, null, callIdRef.current, callKindRef.current).catch(
+          () => {},
+        );
+      }
+      cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Realtime listener for incoming signals
   useEffect(() => {
