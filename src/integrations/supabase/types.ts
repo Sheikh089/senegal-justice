@@ -96,6 +96,69 @@ export type Database = {
           },
         ]
       }
+      biometrics: {
+        Row: {
+          captured_at: string
+          created_at: string
+          created_by: string
+          dossier_id: string | null
+          finger: string
+          hand: string | null
+          id: string
+          image_url: string
+          notes: string | null
+          quality: number | null
+          suspect_id: string | null
+          template: string | null
+          updated_at: string
+        }
+        Insert: {
+          captured_at?: string
+          created_at?: string
+          created_by: string
+          dossier_id?: string | null
+          finger: string
+          hand?: string | null
+          id?: string
+          image_url: string
+          notes?: string | null
+          quality?: number | null
+          suspect_id?: string | null
+          template?: string | null
+          updated_at?: string
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          created_by?: string
+          dossier_id?: string | null
+          finger?: string
+          hand?: string | null
+          id?: string
+          image_url?: string
+          notes?: string | null
+          quality?: number | null
+          suspect_id?: string | null
+          template?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biometrics_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "biometrics_suspect_id_fkey"
+            columns: ["suspect_id"]
+            isOneToOne: false
+            referencedRelation: "suspects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_signals: {
         Row: {
           call_id: string
@@ -260,6 +323,99 @@ export type Database = {
         }
         Relationships: []
       }
+      fingerprint_matches: {
+        Row: {
+          biometric_id: string
+          created_at: string
+          id: string
+          rank: number | null
+          scan_id: string
+          score: number
+          suspect_id: string | null
+        }
+        Insert: {
+          biometric_id: string
+          created_at?: string
+          id?: string
+          rank?: number | null
+          scan_id: string
+          score: number
+          suspect_id?: string | null
+        }
+        Update: {
+          biometric_id?: string
+          created_at?: string
+          id?: string
+          rank?: number | null
+          scan_id?: string
+          score?: number
+          suspect_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fingerprint_matches_biometric_id_fkey"
+            columns: ["biometric_id"]
+            isOneToOne: false
+            referencedRelation: "biometrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fingerprint_matches_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fingerprint_matches_suspect_id_fkey"
+            columns: ["suspect_id"]
+            isOneToOne: false
+            referencedRelation: "suspects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investigations: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          dossier_id: string | null
+          id: string
+          status: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          dossier_id?: string | null
+          id?: string
+          status?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          dossier_id?: string | null
+          id?: string
+          status?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investigations_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string | null
@@ -372,6 +528,138 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      scan_history: {
+        Row: {
+          created_at: string
+          created_by: string
+          dossier_id: string | null
+          id: string
+          investigation_id: string | null
+          query_biometric_id: string | null
+          query_image_url: string | null
+          results_count: number
+          status: string
+          top_score: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          dossier_id?: string | null
+          id?: string
+          investigation_id?: string | null
+          query_biometric_id?: string | null
+          query_image_url?: string | null
+          results_count?: number
+          status?: string
+          top_score?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          dossier_id?: string | null
+          id?: string
+          investigation_id?: string | null
+          query_biometric_id?: string | null
+          query_image_url?: string | null
+          results_count?: number
+          status?: string
+          top_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_history_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_history_investigation_id_fkey"
+            columns: ["investigation_id"]
+            isOneToOne: false
+            referencedRelation: "investigations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_history_query_biometric_id_fkey"
+            columns: ["query_biometric_id"]
+            isOneToOne: false
+            referencedRelation: "biometrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suspects: {
+        Row: {
+          adresse: string | null
+          alias: string | null
+          created_at: string
+          created_by: string
+          date_naissance: string | null
+          dossier_id: string | null
+          id: string
+          lieu_naissance: string | null
+          nationalite: string | null
+          nom: string
+          photo_url: string | null
+          prenom: string | null
+          profession: string | null
+          sexe: string | null
+          signalement: string | null
+          status: string
+          telephone: string | null
+          updated_at: string
+        }
+        Insert: {
+          adresse?: string | null
+          alias?: string | null
+          created_at?: string
+          created_by: string
+          date_naissance?: string | null
+          dossier_id?: string | null
+          id?: string
+          lieu_naissance?: string | null
+          nationalite?: string | null
+          nom: string
+          photo_url?: string | null
+          prenom?: string | null
+          profession?: string | null
+          sexe?: string | null
+          signalement?: string | null
+          status?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adresse?: string | null
+          alias?: string | null
+          created_at?: string
+          created_by?: string
+          date_naissance?: string | null
+          dossier_id?: string | null
+          id?: string
+          lieu_naissance?: string | null
+          nationalite?: string | null
+          nom?: string
+          photo_url?: string | null
+          prenom?: string | null
+          profession?: string | null
+          sexe?: string | null
+          signalement?: string | null
+          status?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suspects_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
