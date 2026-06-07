@@ -11,6 +11,7 @@ import {
   Shield,
   ArrowLeft,
   LogOut,
+  Fingerprint,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -33,6 +34,7 @@ const policeItems = [
   { title: "Nouveau dossier", url: "/police/nouveau", icon: FolderPlus },
   { title: "Mes dossiers", url: "/police/dossiers", icon: FileSearch },
   { title: "Transmettre", url: "/police/transmettre", icon: Send },
+  { title: "Biométrie", url: "/police/biometrie", icon: Fingerprint },
   { title: "Statistiques", url: "/police/stats", icon: BarChart3 },
 ];
 

@@ -342,6 +342,18 @@ export default function DossierDetail({ variant }: Props) {
                 <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
                   <Camera className="h-4 w-4 text-primary" /> Photos & empreintes
                 </h3>
+                {variant === "police" && (
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="w-full justify-center gap-2"
+                  >
+                    <a href={`/police/biometrie?dossier=${dossier.id}`}>
+                      <Fingerprint className="h-3.5 w-3.5" /> Comparer dans AFIS
+                    </a>
+                  </Button>
+                )}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {(Object.keys(BIOMETRIC_LABELS) as BiometricKey[]).map((k) => {
                     const url = mediaUrls[k];
