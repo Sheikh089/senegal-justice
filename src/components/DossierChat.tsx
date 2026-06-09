@@ -108,7 +108,7 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
-      .channel(`messages-${dossierId}`)
+      .channel(`messages-${dossierId}`, { config: { private: true } })
       .on(
         "postgres_changes",
         {
