@@ -12,12 +12,11 @@ import type { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
+// Pour des raisons de sécurité (prévention d'escalade de privilèges), seul le rôle
+// "police" peut être attribué à l'inscription. Les autres rôles (procureur, juge,
+// greffier, admin) doivent être attribués par un administrateur depuis le module Admin.
 const ROLES: { value: AppRole; label: string }[] = [
   { value: "police", label: "Police" },
-  { value: "procureur", label: "Procureur" },
-  { value: "juge", label: "Juge" },
-  { value: "greffier", label: "Greffier" },
-  { value: "assistant", label: "Assistant" },
 ];
 
 const Inscription = () => {
