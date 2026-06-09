@@ -1,5 +1,23 @@
-/// <reference types="w3c-web-usb" />
 // Module WebUSB pour scanners d'empreintes digitales (DigitalPersona / SecuGen / génériques).
+// Types WebUSB minimaux (le navigateur les fournit à l'exécution).
+type USBDeviceFilter = { vendorId?: number; productId?: number; classCode?: number };
+type USBEndpoint = { endpointNumber: number; direction: "in" | "out"; packetSize: number };
+type USBAlternateInterface = { endpoints: USBEndpoint[] };
+type USBInterface = { interfaceNumber: number; alternate: USBAlternateInterface };
+type USBConfiguration = { interfaces: USBInterface[] };
+type USBInTransferResult = { data?: DataView };
+type USBDevice = {
+  opened: boolean;
+  configuration: USBConfiguration | null;
+  vendorId: number;
+  productId: number;
+  productName?: string;
+  manufacturerName?: string;
+  open(): Promise<void>;
+  selectConfiguration(n: number): Promise<void>;
+  claimInterface(n: number): Promise<void>;
+  transferIn(endpointNumber: number, length: number): Promise<USBInTransferResult>;
+};
 // L'API WebUSB ne dispose pas de drivers propriétaires : on récupère un "template" brut
 // depuis l'endpoint IN du device. Pour les scanners non supportés ou en absence de matériel,
 // `requestDevice` renverra une erreur que l'appelant pourra capter pour proposer un upload.
