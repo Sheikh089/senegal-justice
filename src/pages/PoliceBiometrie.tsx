@@ -6,13 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Fingerprint, Upload, Camera, ZoomIn, ZoomOut, RotateCw, ScanLine,
-  Search, Save, FileDown, AlertTriangle, History, Activity, Loader2, Image as ImageIcon, X,
+  Search, Save, FileDown, AlertTriangle, History, Activity, Loader2, Image as ImageIcon, X, Usb, Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { WebcamCapture } from "@/components/biometrics/WebcamCapture";
 import { useSearchParams } from "react-router-dom";
+import {
+  isWebUSBSupported,
+  pickFingerprintDevice,
+  captureFingerprint,
+  uint8ToBase64,
+} from "@/lib/webusb-fingerprint";
 
 type MatchRow = {
   id: string;
@@ -56,6 +62,9 @@ export default function PoliceBiometrie() {
   const [history, setHistory] = useState<any[]>([]);
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [lastScanId, setLastScanId] = useState<string | null>(null);
+  const [usbBusy, setUsbBusy] = useState(false);
+  const [lastDeviceInfo, setLastDeviceInfo] = useState<any | null>(null);
+  const [capturedTemplate, setCapturedTemplate] = useState<Uint8Array | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => () => { if (queryUrl) URL.revokeObjectURL(queryUrl); }, [queryUrl]);
@@ -165,17 +174,61 @@ export default function PoliceBiometrie() {
       const path = `${user.id}/refs/${Date.now()}.${ext}`;
       const up = await supabase.storage.from("biometrics").upload(path, queryFile, { contentType: queryFile.type });
       if (up.error) throw up.error;
+
+      // Chiffrement côté serveur du template (si capturé via scanner) ou de l'image (fallback).
+      let encryptedPayload: any = {};
+      try {
+        const sourceBytes = capturedTemplate ?? new Uint8Array(await queryFile.arrayBuffer());
+        const { data: cryptoData, error: cryptoErr } = await supabase.functions.invoke("biometric-crypto", {
+          body: { action: "encrypt", template: uint8ToBase64(sourceBytes) },
+        });
+        if (cryptoErr) throw cryptoErr;
+        encryptedPayload = cryptoData;
+      } catch (e: any) {
+        toast.error("Chiffrement indisponible : " + (e?.message ?? ""));
+        return;
+      }
+
       const { error } = await supabase.from("biometrics").insert({
         created_by: user.id,
         finger: "inconnu",
         image_url: path,
         dossier_id: prefilledDossier,
         quality: 80,
+        capture_source: capturedTemplate ? "webusb" : "upload",
+        device_info: lastDeviceInfo,
+        ...encryptedPayload,
       });
       if (error) throw error;
-      toast.success("Empreinte enregistrée dans la base");
+      toast.success("Empreinte chiffrée et enregistrée");
+      setCapturedTemplate(null);
     } catch (e: any) {
       toast.error(e.message ?? "Échec enregistrement");
+    }
+  }
+
+  async function handleUsbScan() {
+    if (!isWebUSBSupported()) {
+      toast.error("WebUSB requis (Chrome/Edge en HTTPS)");
+      return;
+    }
+    setUsbBusy(true);
+    try {
+      const device = await pickFingerprintDevice();
+      toast.info(`Scanner détecté : ${device.productName ?? "USB"} — posez le doigt`);
+      const capture = await captureFingerprint(device);
+      setCapturedTemplate(capture.template);
+      setLastDeviceInfo(capture.device);
+
+      // Aperçu image : on génère une visualisation à partir du template (pas d'image native).
+      const previewBlob = new Blob([new Uint8Array(capture.template)], { type: "application/octet-stream" });
+      const previewFile = new File([previewBlob], `webusb-${Date.now()}.bin`, { type: "application/octet-stream" });
+      pickFile(previewFile);
+      toast.success(`Template capturé (${capture.template.length} octets) — prêt à chiffrer`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Capture annulée");
+    } finally {
+      setUsbBusy(false);
     }
   }
 
@@ -288,6 +341,15 @@ export default function PoliceBiometrie() {
                 <Button size="sm" onClick={() => setWebcamOpen(true)} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100">
                   <Camera className="h-3.5 w-3.5 mr-1.5" /> Capture caméra
                 </Button>
+                <Button size="sm" onClick={handleUsbScan} disabled={usbBusy} className="bg-cyan-700/40 hover:bg-cyan-700/60 border border-cyan-500/40 text-cyan-100">
+                  {usbBusy ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Usb className="h-3.5 w-3.5 mr-1.5" />}
+                  Scanner USB
+                </Button>
+                {capturedTemplate && (
+                  <span className="text-[10px] text-emerald-300 flex items-center gap-1">
+                    <Lock className="h-3 w-3" /> template prêt
+                  </span>
+                )}
                 <div className="h-5 w-px bg-slate-700 mx-1" />
                 <Button size="icon" variant="ghost" onClick={() => setZoom((z) => Math.min(z + 0.2, 3))} className="text-slate-300 hover:bg-slate-800 h-8 w-8"><ZoomIn className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => setZoom((z) => Math.max(z - 0.2, 0.4))} className="text-slate-300 hover:bg-slate-800 h-8 w-8"><ZoomOut className="h-4 w-4" /></Button>
