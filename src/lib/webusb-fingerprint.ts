@@ -79,7 +79,10 @@ export async function captureFingerprint(device: USBDevice, timeoutMs = 8000): P
     try {
       const res = await device.transferIn(inEndpoint.endpointNumber, inEndpoint.packetSize);
       if (res.data && res.data.byteLength > 0) {
-        buf = new Uint8Array(res.data.buffer);
+        const view = res.data;
+        const copy = new Uint8Array(view.byteLength);
+        copy.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
+        buf = copy;
         if (buf.length >= 64) break;
       }
     } catch {
