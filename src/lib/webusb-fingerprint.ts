@@ -1,3 +1,4 @@
+/// <reference types="w3c-web-usb" />
 // Module WebUSB pour scanners d'empreintes digitales (DigitalPersona / SecuGen / génériques).
 // L'API WebUSB ne dispose pas de drivers propriétaires : on récupère un "template" brut
 // depuis l'endpoint IN du device. Pour les scanners non supportés ou en absence de matériel,
