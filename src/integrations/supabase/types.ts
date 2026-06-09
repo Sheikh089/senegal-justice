@@ -98,9 +98,11 @@ export type Database = {
       }
       biometrics: {
         Row: {
+          capture_source: string | null
           captured_at: string
           created_at: string
           created_by: string
+          device_info: Json | null
           dossier_id: string | null
           finger: string
           hand: string | null
@@ -110,12 +112,18 @@ export type Database = {
           quality: number | null
           suspect_id: string | null
           template: string | null
+          template_algo: string | null
+          template_encrypted: string | null
+          template_hash: string | null
+          template_iv: string | null
           updated_at: string
         }
         Insert: {
+          capture_source?: string | null
           captured_at?: string
           created_at?: string
           created_by: string
+          device_info?: Json | null
           dossier_id?: string | null
           finger: string
           hand?: string | null
@@ -125,12 +133,18 @@ export type Database = {
           quality?: number | null
           suspect_id?: string | null
           template?: string | null
+          template_algo?: string | null
+          template_encrypted?: string | null
+          template_hash?: string | null
+          template_iv?: string | null
           updated_at?: string
         }
         Update: {
+          capture_source?: string | null
           captured_at?: string
           created_at?: string
           created_by?: string
+          device_info?: Json | null
           dossier_id?: string | null
           finger?: string
           hand?: string | null
@@ -140,6 +154,10 @@ export type Database = {
           quality?: number | null
           suspect_id?: string | null
           template?: string | null
+          template_algo?: string | null
+          template_encrypted?: string | null
+          template_hash?: string | null
+          template_iv?: string | null
           updated_at?: string
         }
         Relationships: [
