@@ -221,7 +221,7 @@ export default function PoliceBiometrie() {
       setLastDeviceInfo(capture.device);
 
       // Aperçu image : on génère une visualisation à partir du template (pas d'image native).
-      const previewBlob = new Blob([capture.template], { type: "image/png" });
+      const previewBlob = new Blob([new Uint8Array(capture.template)], { type: "application/octet-stream" });
       const previewFile = new File([previewBlob], `webusb-${Date.now()}.bin`, { type: "application/octet-stream" });
       pickFile(previewFile);
       toast.success(`Template capturé (${capture.template.length} octets) — prêt à chiffrer`);
