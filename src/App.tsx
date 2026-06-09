@@ -15,6 +15,7 @@ import PoliceDossiers from "./pages/PoliceDossiers.tsx";
 import PoliceNouveau from "./pages/PoliceNouveau.tsx";
 import PoliceEditer from "./pages/PoliceEditer.tsx";
 import PoliceBiometrie from "./pages/PoliceBiometrie.tsx";
+import PoliceTransmettre from "./pages/PoliceTransmettre.tsx";
 import TribunalDashboard from "./pages/TribunalDashboard.tsx";
 import TribunalDossiers from "./pages/TribunalDossiers.tsx";
 import TribunalAudiences from "./pages/TribunalAudiences.tsx";
@@ -43,7 +44,7 @@ const App = () => (
             <Route path="/police/dossiers" element={<ProtectedRoute allowedRoles={["police"]}><PoliceDossiers /></ProtectedRoute>} />
             <Route path="/police/nouveau" element={<ProtectedRoute allowedRoles={["police"]}><PoliceNouveau /></ProtectedRoute>} />
             <Route path="/police/dossiers/:id/editer" element={<ProtectedRoute allowedRoles={["police"]}><PoliceEditer /></ProtectedRoute>} />
-            <Route path="/police/transmettre" element={<ProtectedRoute allowedRoles={["police"]}><ComingSoon variant="police" title="Transmettre" /></ProtectedRoute>} />
+            <Route path="/police/transmettre" element={<ProtectedRoute allowedRoles={["police"]}><PoliceTransmettre /></ProtectedRoute>} />
             <Route path="/police/stats" element={<ProtectedRoute allowedRoles={["police"]}><ComingSoon variant="police" title="Statistiques" /></ProtectedRoute>} />
             <Route path="/police/biometrie" element={<ProtectedRoute allowedRoles={["police"]}><PoliceBiometrie /></ProtectedRoute>} />
             <Route path="/police/dossiers/:id" element={<ProtectedRoute allowedRoles={["police"]}><DossierDetail variant="police" /></ProtectedRoute>} />
