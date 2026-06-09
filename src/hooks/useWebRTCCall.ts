@@ -263,7 +263,7 @@ export function useWebRTCCall({ dossierId, selfId, peerId }: Params) {
   useEffect(() => {
     if (!selfId) return;
     const channel = supabase
-      .channel(`call-${dossierId}-${selfId}`)
+      .channel(`call-${dossierId}-${selfId}`, { config: { private: true } })
       .on(
         "postgres_changes",
         {
