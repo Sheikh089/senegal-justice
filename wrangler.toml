@@ -1,6 +1,18 @@
 name = "senegal-justice"
 compatibility_date = "2026-06-11"
+compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
 not_found_handling = "single-page-application"
+
+# Static asset headers (cache long-lived hashed assets, never the SPA shell)
+[[assets.headers]]
+for = "/assets/*"
+[assets.headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[assets.headers]]
+for = "/index.html"
+[assets.headers.values]
+Cache-Control = "no-cache"
