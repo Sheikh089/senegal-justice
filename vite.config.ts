@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), ...(mode === "development" ? [componentTagger()] : [])],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -31,11 +31,22 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs", "lucide-react"],
-          vendor: ["@tanstack/react-query", "date-fns", "zod"],
-          pdf: ["jspdf"],
+        manualChunks(id) {
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/react-router-dom")) {
+            return "react";
+          }
+
+          if (id.includes("node_modules/@radix-ui") || id.includes("node_modules/lucide-react")) {
+            return "ui";
+          }
+
+          if (id.includes("node_modules/@tanstack") || id.includes("node_modules/date-fns") || id.includes("node_modules/zod")) {
+            return "vendor";
+          }
+
+          if (id.includes("node_modules/jspdf")) {
+            return "pdf";
+          }
         },
       },
     },
