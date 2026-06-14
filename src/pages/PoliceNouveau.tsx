@@ -1,16 +1,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import {
   FilePlus,
   Send,
-  Camera,
-  Upload,
-  X,
-  Fingerprint,
-  Power,
-  CircleDot,
-  ScanLine,
-  CheckCircle2,
   AlertCircle,
   Loader2,
 } from "lucide-react";
@@ -19,21 +11,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { generateReference } from "@/lib/dossier-helpers";
-
-type CaptureKey =
-  | "photo_face"
-  | "photo_gauche"
-  | "photo_droite"
-  | "empreinte_gauche"
-  | "empreinte_droite";
-
-const CAPTURES: { key: CaptureKey; label: string; icon: "camera" | "finger" }[] = [
-  { key: "photo_face", label: "Photo de face", icon: "camera" },
-  { key: "photo_gauche", label: "Profil gauche", icon: "camera" },
-  { key: "photo_droite", label: "Profil droit", icon: "camera" },
-  { key: "empreinte_gauche", label: "Empreintes main gauche", icon: "finger" },
-  { key: "empreinte_droite", label: "Empreintes main droite", icon: "finger" },
-];
 
 export default function PoliceNouveau() {
   const { user } = useAuth();
