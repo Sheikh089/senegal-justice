@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download, Archive, MessageSquare } from "lucide-react";
+import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download, Archive } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
