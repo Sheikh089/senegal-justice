@@ -4,6 +4,7 @@ import { MessageSquare, Search } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import type { DossierRow } from "@/lib/dossier-helpers";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -22,9 +23,11 @@ interface ConversationItem {
 export default function Messagerie({ variant }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { perDossier: unreadByDossier } = useUnreadMessages();
   const [items, setItems] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -77,7 +80,22 @@ export default function Messagerie({ variant }: Props) {
       setItems(enriched);
       setLoading(false);
     })();
-  }, [user, variant]);
+  }, [user, variant, refreshTick]);
+
+  // Realtime: refresh conversation list when any new message arrives
+  useEffect(() => {
+    const channel = supabase
+      .channel("messagerie-list")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        () => setRefreshTick((t) => t + 1)
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const filtered = items.filter((it) => {
     const q = search.toLowerCase();
@@ -131,11 +149,18 @@ export default function Messagerie({ variant }: Props) {
                     <p className="text-sm font-medium text-foreground truncate">
                       {it.peerName ?? (variant === "police" ? "Procureur (non assigné)" : "Officier")}
                     </p>
-                    {it.lastAt && (
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {formatDistanceToNow(new Date(it.lastAt), { addSuffix: true, locale: fr })}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {it.lastAt && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(it.lastAt), { addSuffix: true, locale: fr })}
+                        </span>
+                      )}
+                      {unreadByDossier[it.dossier.id] > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center">
+                          {unreadByDossier[it.dossier.id] > 99 ? "99+" : unreadByDossier[it.dossier.id]}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-[11px] font-mono text-muted-foreground truncate">
                     {it.dossier.reference} · {it.dossier.titre}
