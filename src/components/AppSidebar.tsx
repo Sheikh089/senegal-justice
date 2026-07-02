@@ -17,6 +17,7 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { toast } from "sonner";
 import {
   Sidebar,
@@ -56,6 +57,7 @@ export function AppSidebar({ variant }: { variant: "police" | "tribunal" }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { total: unreadTotal } = useUnreadMessages();
   const items = variant === "police" ? policeItems : tribunalItems;
 
   const handleSignOut = async () => {
@@ -102,7 +104,18 @@ export function AppSidebar({ variant }: { variant: "police" | "tribunal" }) {
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span className="flex-1">{item.title}</span>}
+                      {item.title === "Messagerie" && unreadTotal > 0 && (
+                        <span
+                          className={
+                            collapsed
+                              ? "absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"
+                              : "ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center"
+                          }
+                        >
+                          {!collapsed && (unreadTotal > 99 ? "99+" : unreadTotal)}
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
