@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download, Archive, MessageSquare } from "lucide-react";
+import { CalendarIcon, ArrowLeft, MapPin, FileText, Gavel, User, Scale, UserSquare, Camera, Fingerprint, Download, Archive } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge, PrioriteBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -321,22 +321,6 @@ export default function DossierDetail({ variant }: Props) {
             </div>
 
             <PiecesJointes dossierId={dossier.id} />
-
-            <Button
-              asChild
-              variant="outline"
-              className="w-full justify-center gap-2"
-            >
-              <a
-                href={
-                  variant === "police"
-                    ? `/police/dossiers/${dossier.id}/chat`
-                    : `/tribunal/dossiers/${dossier.id}/chat`
-                }
-              >
-                <MessageSquare className="h-4 w-4" /> Ouvrir la communication
-              </a>
-            </Button>
 
             {Object.keys(mediaUrls).length > 0 && (
               <div className="stat-card space-y-3">
