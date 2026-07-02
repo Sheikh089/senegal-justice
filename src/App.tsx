@@ -24,6 +24,7 @@ import TribunalAttribution from "./pages/TribunalAttribution.tsx";
 import TribunalDecisions from "./pages/TribunalDecisions.tsx";
 import DossierDetail from "./pages/DossierDetail.tsx";
 import DossierChatPage from "./pages/DossierChatPage.tsx";
+import Messagerie from "./pages/Messagerie.tsx";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/police/nouveau" element={<ProtectedRoute allowedRoles={["police"]}><PoliceNouveau /></ProtectedRoute>} />
             <Route path="/police/dossiers/:id/editer" element={<ProtectedRoute allowedRoles={["police"]}><PoliceEditer /></ProtectedRoute>} />
             <Route path="/police/dossiers/:id/chat" element={<ProtectedRoute allowedRoles={["police"]}><DossierChatPage variant="police" /></ProtectedRoute>} />
+            <Route path="/police/messagerie" element={<ProtectedRoute allowedRoles={["police"]}><Messagerie variant="police" /></ProtectedRoute>} />
             <Route path="/police/transmettre" element={<ProtectedRoute allowedRoles={["police"]}><PoliceTransmettre /></ProtectedRoute>} />
             <Route path="/police/stats" element={<ProtectedRoute allowedRoles={["police"]}><ComingSoon variant="police" title="Statistiques" /></ProtectedRoute>} />
             <Route path="/police/biometrie" element={<ProtectedRoute allowedRoles={["police"]}><PoliceBiometrie /></ProtectedRoute>} />
@@ -59,6 +61,7 @@ const App = () => (
             <Route path="/tribunal/stats" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><ComingSoon variant="tribunal" title="Statistiques" /></ProtectedRoute>} />
             <Route path="/tribunal/dossiers/:id" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><DossierDetail variant="tribunal" /></ProtectedRoute>} />
             <Route path="/tribunal/dossiers/:id/chat" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><DossierChatPage variant="tribunal" /></ProtectedRoute>} />
+            <Route path="/tribunal/messagerie" element={<ProtectedRoute allowedRoles={["procureur", "juge", "greffier"]}><Messagerie variant="tribunal" /></ProtectedRoute>} />
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>

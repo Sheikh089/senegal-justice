@@ -322,22 +322,6 @@ export default function DossierDetail({ variant }: Props) {
 
             <PiecesJointes dossierId={dossier.id} />
 
-            <Button
-              asChild
-              variant="outline"
-              className="w-full justify-center gap-2"
-            >
-              <a
-                href={
-                  variant === "police"
-                    ? `/police/dossiers/${dossier.id}/chat`
-                    : `/tribunal/dossiers/${dossier.id}/chat`
-                }
-              >
-                <MessageSquare className="h-4 w-4" /> Ouvrir la communication
-              </a>
-            </Button>
-
             {Object.keys(mediaUrls).length > 0 && (
               <div className="stat-card space-y-3">
                 <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">

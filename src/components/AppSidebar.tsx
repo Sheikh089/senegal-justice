@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   LogOut,
   Fingerprint,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -34,6 +35,7 @@ const policeItems = [
   { title: "Nouveau dossier", url: "/police/nouveau", icon: FolderPlus },
   { title: "Mes dossiers", url: "/police/dossiers", icon: FileSearch },
   { title: "Transmettre", url: "/police/transmettre", icon: Send },
+  { title: "Messagerie", url: "/police/messagerie", icon: MessageSquare },
   { title: "Biométrie", url: "/police/biometrie", icon: Fingerprint },
   { title: "Statistiques", url: "/police/stats", icon: BarChart3 },
 ];
@@ -44,6 +46,7 @@ const tribunalItems = [
   { title: "Attribution", url: "/tribunal/attribution", icon: Users },
   { title: "Audiences", url: "/tribunal/audiences", icon: CalendarDays },
   { title: "Décisions", url: "/tribunal/decisions", icon: Gavel },
+  { title: "Messagerie", url: "/tribunal/messagerie", icon: MessageSquare },
   { title: "Statistiques", url: "/tribunal/stats", icon: BarChart3 },
 ];
 
