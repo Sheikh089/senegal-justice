@@ -225,13 +225,18 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
     });
   };
 
-  // Auto scroll
+  // Auto scroll when a new latest message arrives (ignore prepended history)
+  const lastMessageIdRef = useRef<string | null>(null);
   useEffect(() => {
+    const latest = messages[messages.length - 1];
+    if (!latest) return;
+    if (lastMessageIdRef.current === latest.id) return;
+    lastMessageIdRef.current = latest.id;
     requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (el) el.scrollTop = el.scrollHeight;
     });
-  }, [messages.length]);
+  }, [messages]);
 
   // Mark unread incoming as read
   useEffect(() => {
