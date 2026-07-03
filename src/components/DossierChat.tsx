@@ -12,6 +12,7 @@ import {
   Pause,
   MessageSquare,
   Loader2,
+  ChevronUp,
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -49,6 +50,7 @@ interface Props {
 
 const MAX_FILE_MB = 25;
 const ACCEPTED = "image/*,application/pdf,audio/*,video/*";
+const PAGE_SIZE = 30;
 
 function initials(name: string) {
   return name
@@ -69,12 +71,18 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [peerTyping, setPeerTyping] = useState(false);
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
+  const lastTypingSentRef = useRef<number>(0);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -86,7 +94,7 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
 
   const call = useWebRTCCall({ dossierId, selfId: user?.id ?? null, peerId });
 
-  // Initial load
+  // Initial load — most recent PAGE_SIZE messages
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -94,16 +102,41 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
       .from("messages")
       .select("*")
       .eq("dossier_id", dossierId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE)
       .then(({ data }) => {
         if (!mounted) return;
-        setMessages((data ?? []) as MessageRow[]);
+        const rows = ((data ?? []) as MessageRow[]).slice().reverse();
+        setMessages(rows);
+        setHasMore((data?.length ?? 0) === PAGE_SIZE);
         setLoading(false);
       });
     return () => {
       mounted = false;
     };
   }, [dossierId]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || messages.length === 0) return;
+    setLoadingMore(true);
+    const el = scrollRef.current;
+    const prevHeight = el?.scrollHeight ?? 0;
+    const oldest = messages[0].created_at;
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("dossier_id", dossierId)
+      .lt("created_at", oldest)
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+    const older = ((data ?? []) as MessageRow[]).slice().reverse();
+    setMessages((prev) => [...older, ...prev]);
+    setHasMore((data?.length ?? 0) === PAGE_SIZE);
+    setLoadingMore(false);
+    requestAnimationFrame(() => {
+      if (el) el.scrollTop = el.scrollHeight - prevHeight;
+    });
+  };
 
   // Realtime subscription
   useEffect(() => {
@@ -144,6 +177,53 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
       supabase.removeChannel(channel);
     };
   }, [dossierId]);
+
+  // Typing indicator — broadcast channel
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase.channel(`typing-${dossierId}`, {
+      config: { broadcast: { self: false } },
+    });
+    ch.on("broadcast", { event: "typing" }, (payload) => {
+      const from = (payload.payload as any)?.user_id;
+      if (!from || from === user.id) return;
+      setPeerTyping(true);
+      if (typingTimeoutRef.current) window.clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = window.setTimeout(() => setPeerTyping(false), 3000);
+    }).on("broadcast", { event: "stop-typing" }, (payload) => {
+      const from = (payload.payload as any)?.user_id;
+      if (!from || from === user.id) return;
+      setPeerTyping(false);
+    }).subscribe();
+    typingChannelRef.current = ch;
+    return () => {
+      if (typingTimeoutRef.current) window.clearTimeout(typingTimeoutRef.current);
+      supabase.removeChannel(ch);
+      typingChannelRef.current = null;
+    };
+  }, [dossierId, user?.id]);
+
+  const emitTyping = () => {
+    if (!user || !typingChannelRef.current) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 1500) return;
+    lastTypingSentRef.current = now;
+    typingChannelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { user_id: user.id },
+    });
+  };
+
+  const emitStopTyping = () => {
+    if (!user || !typingChannelRef.current) return;
+    lastTypingSentRef.current = 0;
+    typingChannelRef.current.send({
+      type: "broadcast",
+      event: "stop-typing",
+      payload: { user_id: user.id },
+    });
+  };
 
   // Auto scroll
   useEffect(() => {
@@ -210,7 +290,10 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
       content: text,
     });
     if (error) toast.error("Échec de l'envoi : " + error.message);
-    else setDraft("");
+    else {
+      setDraft("");
+      emitStopTyping();
+    }
     setSending(false);
   };
 
@@ -367,6 +450,24 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
           {loading && (
             <p className="text-xs text-muted-foreground text-center py-8">Chargement...</p>
           )}
+          {!loading && hasMore && (
+            <div className="flex justify-center">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="gap-2 text-xs"
+              >
+                {loadingMore ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ChevronUp className="h-3 w-3" />
+                )}
+                Charger les messages précédents
+              </Button>
+            </div>
+          )}
           {!loading && messages.length === 0 && (
             <div className="text-center py-12">
               <MessageSquare className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
@@ -491,6 +592,17 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
               })}
             </div>
           ))}
+          {peerTyping && (
+            <div className="flex justify-start">
+              <div className="bg-card border border-border rounded-2xl rounded-bl-sm px-3.5 py-2 shadow-sm">
+                <div className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" />
+                </div>
+              </div>
+            </div>
+          )}
       </div>
 
       {/* Composer */}
@@ -529,7 +641,12 @@ export function DossierChat({ dossierId, peerId, peerName }: Props) {
             </Button>
             <Textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                if (e.target.value.trim()) emitTyping();
+                else emitStopTyping();
+              }}
+              onBlur={emitStopTyping}
               onKeyDown={onKeyDown}
               placeholder="Écrivez un message..."
               rows={1}
