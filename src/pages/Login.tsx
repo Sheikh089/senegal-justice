@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Scale, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,10 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const safeNext =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -35,6 +39,11 @@ const Login = () => {
       .maybeSingle();
 
     const role = roleData?.role;
+    if (safeNext) {
+      navigate(safeNext, { replace: true });
+      setLoading(false);
+      return;
+    }
     if (role === "admin") {
       navigate("/admin", { replace: true });
     } else if (role === "police") {

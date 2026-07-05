@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
 import { componentTagger } from "lovable-tagger";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,7 +16,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), ...(mode === "development" ? [componentTagger()] : [])],
+  plugins: [react(), mcpPlugin(), ...(mode === "development" ? [componentTagger()] : [])],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

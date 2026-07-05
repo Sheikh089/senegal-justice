@@ -25,6 +25,7 @@ import TribunalDecisions from "./pages/TribunalDecisions.tsx";
 import DossierDetail from "./pages/DossierDetail.tsx";
 import DossierChatPage from "./pages/DossierChatPage.tsx";
 import Messagerie from "./pages/Messagerie.tsx";
+import OAuthConsent from "./pages/OAuthConsent.tsx";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/inscription" element={<Inscription />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             {/* Admin */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
             {/* Police routes */}
