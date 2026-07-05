@@ -2,7 +2,8 @@ name: Deploy to Cloudflare
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -25,17 +26,11 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
-
-      - name: Configure Cloudflare Pages SPA fallback
-        run: |
-          test -f dist/index.html
-          printf '/* /index.html 200\n' > dist/_redirects
-          test "$(cat dist/_redirects)" = "/* /index.html 200"
+        run: npm run build:cloudflare-pages
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=senegal-justice --branch=main
+          command: pages deploy dist --project-name=senegal-justice --branch=${{ github.ref_name }}
