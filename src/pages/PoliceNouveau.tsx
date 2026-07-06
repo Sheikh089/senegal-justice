@@ -1,11 +1,47 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { useState } from "react";
-import { FilePlus, Send, AlertCircle, Loader2, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  FilePlus,
+  Send,
+  AlertCircle,
+  Loader2,
+  Sparkles,
+  ExternalLink,
+  History,
+  Eye,
+  Pencil,
+  Check,
+  X,
+  RefreshCw,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { generateReference } from "@/lib/dossier-helpers";
+
+type Article = { numero: string; libelle: string; url?: string };
+type GenerationResult = {
+  description: string;
+  articles: Article[];
+  warnings: string[];
+  model: string;
+  version: string;
+  prompt: string;
+};
+type HistoryRow = {
+  id: string;
+  created_at: string;
+  titre: string | null;
+  type_infraction: string | null;
+  lieu: string | null;
+  prompt: string;
+  model: string;
+  version: string;
+  description: string;
+  articles: Article[];
+  warnings: string[];
+};
 
 export default function PoliceNouveau() {
   const { user } = useAuth();
@@ -14,6 +50,12 @@ export default function PoliceNouveau() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [preview, setPreview] = useState<GenerationResult | null>(null);
+  const [previewMode, setPreviewMode] = useState<"preview" | "edit">("preview");
+  const [editedDescription, setEditedDescription] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [formData, setFormData] = useState({
     titre: "",
@@ -55,16 +97,83 @@ export default function PoliceNouveau() {
       },
     });
     setGenerating(false);
-    if (error || data?.error) {
+    if (error || (data as any)?.error) {
       const msg = data?.error || error?.message || "Erreur IA";
       setErrorMsg(msg);
       toast({ title: "Génération impossible", description: msg, variant: "destructive" });
       return;
     }
-    if (data?.description) {
-      setFormData((prev) => ({ ...prev, description: data.description }));
-      toast({ title: "Description générée", description: "Relis et ajuste si besoin." });
+    const result = data as GenerationResult;
+    if (!result?.description) {
+      toast({ title: "Réponse vide", description: "L'IA n'a rien renvoyé.", variant: "destructive" });
+      return;
     }
+    setPreview(result);
+    setEditedDescription(result.description);
+    setPreviewMode("preview");
+
+    // Historique : on enregistre chaque génération
+    if (user) {
+      const { error: histErr } = await (supabase as any).from("ai_generations").insert({
+        user_id: user.id,
+        titre: formData.titre || null,
+        type_infraction: formData.type_infraction || null,
+        lieu: formData.lieu || null,
+        prompt: result.prompt,
+        model: result.model,
+        version: result.version,
+        description: result.description,
+        articles: result.articles,
+        warnings: result.warnings,
+      });
+      if (histErr) console.error("Historique IA :", histErr);
+    }
+  };
+
+  const applyPreview = () => {
+    if (!preview) return;
+    const articlesBlock = preview.articles.length
+      ? "\n\nQualification pénale :\n" +
+        preview.articles.map((a) => `- Article ${a.numero} du Code pénal : ${a.libelle}`).join("\n")
+      : "";
+    setFormData((prev) => ({ ...prev, description: editedDescription + articlesBlock }));
+    setPreview(null);
+    toast({ title: "Description appliquée", description: "Tu peux encore l'éditer dans le formulaire." });
+  };
+
+  const loadHistory = async () => {
+    if (!user) return;
+    setLoadingHistory(true);
+    const { data, error } = await (supabase as any)
+      .from("ai_generations")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setLoadingHistory(false);
+    if (error) {
+      toast({ title: "Erreur historique", description: error.message, variant: "destructive" });
+      return;
+    }
+    setHistory((data as HistoryRow[]) ?? []);
+  };
+
+  useEffect(() => {
+    if (showHistory) loadHistory();
+  }, [showHistory]);
+
+  const reuseHistory = (row: HistoryRow) => {
+    setPreview({
+      description: row.description,
+      articles: row.articles ?? [],
+      warnings: row.warnings ?? [],
+      model: row.model,
+      version: row.version,
+      prompt: row.prompt,
+    });
+    setEditedDescription(row.description);
+    setPreviewMode("preview");
+    setShowHistory(false);
   };
 
   const save = async (transmettre: boolean) => {
@@ -274,16 +383,183 @@ export default function PoliceNouveau() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-foreground">Description des faits</label>
-              <button
-                type="button"
-                onClick={generateDescription}
-                disabled={generating}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors disabled:opacity-50"
-              >
-                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                {generating ? "Génération..." : "Générer avec l'IA"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHistory((v) => !v)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-input text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <History className="h-3.5 w-3.5" />
+                  Historique
+                </button>
+                <button
+                  type="button"
+                  onClick={generateDescription}
+                  disabled={generating}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors disabled:opacity-50"
+                >
+                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {generating ? "Génération..." : "Générer avec l'IA"}
+                </button>
+              </div>
             </div>
+
+            {preview && (
+              <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Prévisualisation IA · {preview.model} · {preview.version}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("preview")}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                        previewMode === "preview" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Eye className="h-3 w-3" /> Aperçu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("edit")}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                        previewMode === "edit" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Pencil className="h-3 w-3" /> Éditer
+                    </button>
+                  </div>
+                </div>
+
+                {preview.warnings.length > 0 && (
+                  <div className="rounded-md border border-warning/30 bg-warning/10 p-3 space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-warning">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      Validation des articles
+                    </div>
+                    <ul className="text-xs text-foreground/80 list-disc pl-4 space-y-0.5">
+                      {preview.warnings.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {previewMode === "preview" ? (
+                  <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                    {editedDescription}
+                  </div>
+                ) : (
+                  <textarea
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    rows={8}
+                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
+                  />
+                )}
+
+                {preview.articles.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-foreground uppercase tracking-wide">Sources — Code pénal du Sénégal</div>
+                    <ul className="space-y-1.5">
+                      {preview.articles.map((a, i) => (
+                        <li key={i} className="flex items-start justify-between gap-3 rounded-md bg-background border border-border/60 px-3 py-2">
+                          <div className="text-sm">
+                            <span className="font-medium text-foreground">Article {a.numero}</span>
+                            <span className="text-muted-foreground"> — {a.libelle}</span>
+                          </div>
+                          {a.url && (
+                            <a
+                              href={a.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
+                            >
+                              Ouvrir <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/20">
+                  <button
+                    type="button"
+                    onClick={applyPreview}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Utiliser cette description
+                  </button>
+                  <button
+                    type="button"
+                    onClick={generateDescription}
+                    disabled={generating}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${generating ? "animate-spin" : ""}`} />
+                    Régénérer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreview(null)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {showHistory && (
+              <div className="mt-2 rounded-lg border border-border bg-muted/30 p-4 space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold text-foreground uppercase tracking-wide">Historique des générations IA</div>
+                  <button type="button" onClick={() => setShowHistory(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {loadingHistory ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Chargement…
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">Aucune génération enregistrée pour le moment.</div>
+                ) : (
+                  <ul className="space-y-2 max-h-80 overflow-y-auto">
+                    {history.map((h) => (
+                      <li key={h.id} className="rounded-md border border-border bg-background p-3 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-foreground">
+                            {h.titre || h.type_infraction || "(sans titre)"}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {new Date(h.created_at).toLocaleString("fr-FR")}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">{h.description}</div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-[10px] text-muted-foreground">{h.model} · {h.version}</span>
+                          <button
+                            type="button"
+                            onClick={() => reuseHistory(h)}
+                            className="ml-auto text-xs text-primary hover:underline"
+                          >
+                            Réutiliser
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             <textarea
               name="description"
               value={formData.description}

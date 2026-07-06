@@ -49,6 +49,62 @@ export type Database = {
           },
         ]
       }
+      ai_generations: {
+        Row: {
+          articles: Json
+          created_at: string
+          description: string
+          dossier_id: string | null
+          id: string
+          lieu: string | null
+          model: string
+          prompt: string
+          titre: string | null
+          type_infraction: string | null
+          user_id: string
+          version: string
+          warnings: Json
+        }
+        Insert: {
+          articles?: Json
+          created_at?: string
+          description: string
+          dossier_id?: string | null
+          id?: string
+          lieu?: string | null
+          model: string
+          prompt: string
+          titre?: string | null
+          type_infraction?: string | null
+          user_id: string
+          version?: string
+          warnings?: Json
+        }
+        Update: {
+          articles?: Json
+          created_at?: string
+          description?: string
+          dossier_id?: string | null
+          id?: string
+          lieu?: string | null
+          model?: string
+          prompt?: string
+          titre?: string | null
+          type_infraction?: string | null
+          user_id?: string
+          version?: string
+          warnings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generations_dossier_id_fkey"
+            columns: ["dossier_id"]
+            isOneToOne: false
+            referencedRelation: "dossiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audiences: {
         Row: {
           created_at: string
