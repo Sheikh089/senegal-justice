@@ -1,8 +1,52 @@
-// Génère une description des faits + articles du Code pénal sénégalais
+// Génère une description des faits + articles du Code pénal sénégalais (structuré)
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const VERSION = "v2";
+const MODEL = "google/gemini-3-flash-preview";
+
+// Articles indicatifs du Code pénal sénégalais (Loi n° 65-60) par type d'infraction
+const EXPECTED_ARTICLES: Record<string, string[]> = {
+  "Vol": ["364", "365"],
+  "Vol aggravé": ["364", "366", "367"],
+  "Escroquerie": ["379"],
+  "Violence physique": ["294", "295", "297"],
+  "Abus de confiance": ["383"],
+  "Faux et usage de faux": ["132", "137"],
+  "Trouble à l'ordre public": ["96", "97"],
+};
+
+type Article = { numero: string; libelle: string; url?: string };
+
+function buildUrl(numero: string) {
+  // Référence indicative : lien vers le portail juridique du Sénégal (recherche)
+  return `https://www.google.com/search?q=Code+p%C3%A9nal+S%C3%A9n%C3%A9gal+article+${encodeURIComponent(numero)}`;
+}
+
+function validateArticles(type_infraction: string | undefined, articles: Article[]) {
+  const warnings: string[] = [];
+  if (!articles.length) {
+    warnings.push("Aucun article du Code pénal n'a été cité par l'IA.");
+    return warnings;
+  }
+  const expected = type_infraction ? EXPECTED_ARTICLES[type_infraction] : undefined;
+  if (expected && expected.length) {
+    const cited = articles.map((a) => String(a.numero).replace(/[^\d]/g, ""));
+    const hasMatch = expected.some((e) => cited.includes(e));
+    if (!hasMatch) {
+      warnings.push(
+        `Les articles cités (${cited.join(", ")}) ne correspondent pas aux articles habituellement retenus pour "${type_infraction}" (attendus : ${expected.join(", ")}). À vérifier manuellement.`
+      );
+    }
+  }
+  for (const a of articles) {
+    const n = String(a.numero).replace(/[^\d]/g, "");
+    if (!n) warnings.push(`Numéro d'article invalide : "${a.numero}"`);
+  }
+  return warnings;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -29,18 +73,16 @@ Deno.serve(async (req) => {
 Consignes :
 - Rédige un paragraphe clair, neutre, à la 3e personne (2 à 4 phrases).
 - Reste plausible et générique : n'invente pas d'identités, de dates précises, ni de montants.
-- Termine par une section "Qualification pénale :" listant 1 à 3 articles pertinents du Code pénal sénégalais (Loi n° 65-60 du 21 juillet 1965 et ses modifications) avec numéro d'article et intitulé bref.
-- Format de sortie STRICT :
+- Cite 1 à 3 articles pertinents du Code pénal sénégalais (Loi n° 65-60 du 21 juillet 1965 et modifications).
+- Réponds STRICTEMENT en JSON valide, sans texte hors JSON, sans balises Markdown, au format :
+{
+  "description": "paragraphe des faits (2 à 4 phrases)",
+  "articles": [
+    { "numero": "364", "libelle": "Vol simple" }
+  ]
+}`;
 
-<description>
-... paragraphe ...
-
-Qualification pénale :
-- Article X du Code pénal : ...
-- Article Y du Code pénal : ...
-</description>`;
-
-    const user = `Titre du dossier : ${titre ?? "(non précisé)"}
+    const userPrompt = `Titre du dossier : ${titre ?? "(non précisé)"}
 Type d'infraction : ${type_infraction ?? "(non précisé)"}
 Lieu : ${lieu ?? "(non précisé)"}`;
 
@@ -51,10 +93,11 @@ Lieu : ${lieu ?? "(non précisé)"}`;
         "Lovable-API-Key": LOVABLE_API_KEY,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: MODEL,
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
-          { role: "user", content: user },
+          { role: "user", content: userPrompt },
         ],
       }),
     });
@@ -80,13 +123,38 @@ Lieu : ${lieu ?? "(non précisé)"}`;
     }
 
     const data = await resp.json();
-    let content: string = data?.choices?.[0]?.message?.content ?? "";
-    const m = content.match(/<description>([\s\S]*?)<\/description>/i);
-    if (m) content = m[1].trim();
+    const raw: string = data?.choices?.[0]?.message?.content ?? "";
+    let description = "";
+    let articles: Article[] = [];
+    try {
+      const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+      const parsed = JSON.parse(cleaned);
+      description = String(parsed.description ?? "").trim();
+      if (Array.isArray(parsed.articles)) {
+        articles = parsed.articles
+          .filter((a: any) => a && (a.numero ?? a.number))
+          .map((a: any) => ({
+            numero: String(a.numero ?? a.number),
+            libelle: String(a.libelle ?? a.label ?? ""),
+          }));
+      }
+    } catch {
+      description = raw.trim();
+    }
+    articles = articles.map((a) => ({ ...a, url: buildUrl(a.numero) }));
+    const warnings = validateArticles(type_infraction, articles);
 
-    return new Response(JSON.stringify({ description: content }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        description,
+        articles,
+        warnings,
+        model: MODEL,
+        version: VERSION,
+        prompt: userPrompt,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500,
