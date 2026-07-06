@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
-import { FilePlus, Send, AlertCircle, Loader2 } from "lucide-react";
+import { FilePlus, Send, AlertCircle, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ export default function PoliceNouveau() {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   const [formData, setFormData] = useState({
     titre: "",
@@ -33,6 +34,37 @@ export default function PoliceNouveau() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const generateDescription = async () => {
+    if (!formData.titre && !formData.type_infraction) {
+      toast({
+        title: "Titre requis",
+        description: "Renseigne d'abord le titre ou le type d'infraction.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setGenerating(true);
+    setErrorMsg(null);
+    const { data, error } = await supabase.functions.invoke("generate-description", {
+      body: {
+        titre: formData.titre,
+        type_infraction: formData.type_infraction,
+        lieu: formData.lieu,
+      },
+    });
+    setGenerating(false);
+    if (error || data?.error) {
+      const msg = data?.error || error?.message || "Erreur IA";
+      setErrorMsg(msg);
+      toast({ title: "Génération impossible", description: msg, variant: "destructive" });
+      return;
+    }
+    if (data?.description) {
+      setFormData((prev) => ({ ...prev, description: data.description }));
+      toast({ title: "Description générée", description: "Relis et ajuste si besoin." });
+    }
   };
 
   const save = async (transmettre: boolean) => {
@@ -240,15 +272,29 @@ export default function PoliceNouveau() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">Description des faits</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-foreground">Description des faits</label>
+              <button
+                type="button"
+                onClick={generateDescription}
+                disabled={generating}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors disabled:opacity-50"
+              >
+                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {generating ? "Génération..." : "Générer avec l'IA"}
+              </button>
+            </div>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              rows={4}
+              rows={8}
               placeholder="Décrivez les circonstances de l'infraction..."
               className="w-full px-3 py-2.5 text-sm rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
             />
+            <p className="text-[11px] text-muted-foreground">
+              L'IA propose une description et cite les articles du Code pénal sénégalais à titre indicatif. Vérifie toujours la qualification juridique.
+            </p>
           </div>
 
           <div className="flex gap-3 pt-2">
