@@ -53,8 +53,6 @@ describe("PoliceNouveau — validation & diff (e2e)", () => {
     fireEvent.change(screen.getByPlaceholderText(/Vol à main armée/i), {
       target: { name: "titre", value: "Vol au marché" },
     });
-    // sélection du type
-    const select = screen.getByRole("combobox", { name: "" }) as HTMLSelectElement;
     // Le premier combobox est le type d'infraction
     fireEvent.change(screen.getAllByRole("combobox")[0], {
       target: { name: "type_infraction", value: "Vol" },
@@ -162,9 +160,10 @@ describe("PoliceNouveau — validation & diff (e2e)", () => {
       name: /Comparer avec la description actuelle/i,
     });
     fireEvent.click(diffBtn);
-    const pre = await screen.findByText(/Nouvelle description proposée/i);
-    // dans le bloc diff, on trouve l'ancienne ligne barrée (rm) et la nouvelle (add)
-    expect(pre).toBeInTheDocument();
+    // ligne ajoutée (add) dans le diff
+    const added = await screen.findAllByText(/Nouvelle description proposée/i);
+    expect(added.length).toBeGreaterThanOrEqual(1);
+    // ligne supprimée (rm) — visible uniquement dans le diff
     expect(screen.getByText(/Ancienne description existante/i)).toBeInTheDocument();
   });
 });
