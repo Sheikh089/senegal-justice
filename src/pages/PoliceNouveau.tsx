@@ -512,7 +512,7 @@ export default function PoliceNouveau() {
                 </button>
                 <button
                   type="button"
-                  onClick={generateDescription}
+                  onClick={() => generateDescription()}
                   disabled={generating}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors disabled:opacity-50"
                 >
@@ -572,7 +572,7 @@ export default function PoliceNouveau() {
                         )}
                         <button
                           type="button"
-                          onClick={generateDescription}
+                          onClick={() => generateDescription()}
                           disabled={generating}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border border-warning/30 text-warning hover:bg-warning/10 disabled:opacity-50"
                         >
@@ -748,7 +748,7 @@ export default function PoliceNouveau() {
                   </button>
                   <button
                     type="button"
-                    onClick={generateDescription}
+                    onClick={() => generateDescription()}
                     disabled={generating}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
                   >
