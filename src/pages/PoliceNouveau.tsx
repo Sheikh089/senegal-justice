@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FilePlus,
   Send,
@@ -13,14 +13,26 @@ import {
   Check,
   X,
   RefreshCw,
+  Wand2,
+  Plus,
+  Trash2,
+  GitCompare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { generateReference } from "@/lib/dossier-helpers";
+import {
+  type Article,
+  buildArticleUrl,
+  diffLines,
+  hasChanges,
+  normalizeArticleNumber,
+  suggestedArticlesFor,
+  validateArticles,
+} from "@/lib/penal-code";
 
-type Article = { numero: string; libelle: string; url?: string };
 type GenerationResult = {
   description: string;
   articles: Article[];
@@ -53,6 +65,9 @@ export default function PoliceNouveau() {
   const [preview, setPreview] = useState<GenerationResult | null>(null);
   const [previewMode, setPreviewMode] = useState<"preview" | "edit">("preview");
   const [editedDescription, setEditedDescription] = useState("");
+  const [editedArticles, setEditedArticles] = useState<Article[]>([]);
+  const [articlesEditMode, setArticlesEditMode] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -110,6 +125,9 @@ export default function PoliceNouveau() {
     }
     setPreview(result);
     setEditedDescription(result.description);
+    setEditedArticles(result.articles ?? []);
+    setArticlesEditMode(false);
+    setShowDiff(false);
     setPreviewMode("preview");
 
     // Historique : on enregistre chaque génération
@@ -130,16 +148,68 @@ export default function PoliceNouveau() {
     }
   };
 
+  const buildArticlesBlock = (articles: Article[]) =>
+    articles.length
+      ? "\n\nQualification pénale :\n" +
+        articles.map((a) => `- Article ${a.numero} du Code pénal : ${a.libelle}`).join("\n")
+      : "";
+
+  const candidateDescription = useMemo(
+    () => editedDescription + buildArticlesBlock(editedArticles),
+    [editedDescription, editedArticles]
+  );
+
+  const liveValidation = useMemo(
+    () => validateArticles(formData.type_infraction, editedArticles),
+    [formData.type_infraction, editedArticles]
+  );
+
+  const diff = useMemo(
+    () => diffLines(formData.description, candidateDescription),
+    [formData.description, candidateDescription]
+  );
+  const diffChanged = hasChanges(diff);
+
   const applyPreview = () => {
     if (!preview) return;
-    const articlesBlock = preview.articles.length
-      ? "\n\nQualification pénale :\n" +
-        preview.articles.map((a) => `- Article ${a.numero} du Code pénal : ${a.libelle}`).join("\n")
-      : "";
-    setFormData((prev) => ({ ...prev, description: editedDescription + articlesBlock }));
+    setFormData((prev) => ({ ...prev, description: candidateDescription }));
     setPreview(null);
     toast({ title: "Description appliquée", description: "Tu peux encore l'éditer dans le formulaire." });
   };
+
+  const autoFixArticles = () => {
+    const suggested = suggestedArticlesFor(formData.type_infraction);
+    if (!suggested.length) {
+      toast({
+        title: "Auto-correction indisponible",
+        description: "Aucune liste d'articles de référence pour ce type d'infraction.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEditedArticles(suggested);
+    setArticlesEditMode(false);
+    toast({ title: "Articles corrigés", description: `${suggested.length} article(s) mis à jour.` });
+  };
+
+  const updateArticle = (i: number, patch: Partial<Article>) => {
+    setEditedArticles((prev) =>
+      prev.map((a, idx) => {
+        if (idx !== i) return a;
+        const next = { ...a, ...patch };
+        if (patch.numero !== undefined) {
+          next.numero = patch.numero;
+          const n = normalizeArticleNumber(patch.numero);
+          if (n) next.url = buildArticleUrl(n);
+        }
+        return next;
+      })
+    );
+  };
+  const removeArticle = (i: number) =>
+    setEditedArticles((prev) => prev.filter((_, idx) => idx !== i));
+  const addArticle = () =>
+    setEditedArticles((prev) => [...prev, { numero: "", libelle: "", url: undefined }]);
 
   const loadHistory = async () => {
     if (!user) return;
@@ -172,6 +242,9 @@ export default function PoliceNouveau() {
       prompt: row.prompt,
     });
     setEditedDescription(row.description);
+    setEditedArticles(row.articles ?? []);
+    setArticlesEditMode(false);
+    setShowDiff(false);
     setPreviewMode("preview");
     setShowHistory(false);
   };
@@ -433,14 +506,37 @@ export default function PoliceNouveau() {
                   </div>
                 </div>
 
-                {preview.warnings.length > 0 && (
-                  <div className="rounded-md border border-warning/30 bg-warning/10 p-3 space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-warning">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      Validation des articles
+                {(liveValidation.warnings.length > 0 ||
+                  liveValidation.invalidArticles.length > 0 ||
+                  liveValidation.missingExpected.length > 0) && (
+                  <div className="rounded-md border border-warning/30 bg-warning/10 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-warning">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        Validation des articles
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {liveValidation.expected.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={autoFixArticles}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-warning/20 text-warning hover:bg-warning/30"
+                          >
+                            <Wand2 className="h-3 w-3" /> Auto-corriger
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={generateDescription}
+                          disabled={generating}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border border-warning/30 text-warning hover:bg-warning/10 disabled:opacity-50"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${generating ? "animate-spin" : ""}`} /> Régénérer
+                        </button>
+                      </div>
                     </div>
                     <ul className="text-xs text-foreground/80 list-disc pl-4 space-y-0.5">
-                      {preview.warnings.map((w, i) => (
+                      {liveValidation.warnings.map((w, i) => (
                         <li key={i}>{w}</li>
                       ))}
                     </ul>
@@ -460,17 +556,84 @@ export default function PoliceNouveau() {
                   />
                 )}
 
-                {preview.articles.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-semibold text-foreground uppercase tracking-wide">Sources — Code pénal du Sénégal</div>
-                    <ul className="space-y-1.5">
-                      {preview.articles.map((a, i) => (
-                        <li key={i} className="flex items-start justify-between gap-3 rounded-md bg-background border border-border/60 px-3 py-2">
-                          <div className="text-sm">
-                            <span className="font-medium text-foreground">Article {a.numero}</span>
-                            <span className="text-muted-foreground"> — {a.libelle}</span>
-                          </div>
-                          {a.url && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                      Sources — Code pénal du Sénégal
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setArticlesEditMode((v) => !v)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border border-input text-muted-foreground hover:bg-muted"
+                    >
+                      {articlesEditMode ? (
+                        <>
+                          <Eye className="h-3 w-3" /> Aperçu articles
+                        </>
+                      ) : (
+                        <>
+                          <Pencil className="h-3 w-3" /> Éditer articles
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {editedArticles.length === 0 && !articlesEditMode && (
+                    <div className="text-xs text-muted-foreground italic">Aucun article cité.</div>
+                  )}
+                  <ul className="space-y-1.5">
+                    {editedArticles.map((a, i) => {
+                      const n = normalizeArticleNumber(a.numero);
+                      const invalid =
+                        liveValidation.invalidArticles.includes(n) ||
+                        liveValidation.invalidFormat.includes(a.numero);
+                      return (
+                        <li
+                          key={i}
+                          className={`flex items-start justify-between gap-3 rounded-md border px-3 py-2 ${
+                            invalid
+                              ? "border-warning/40 bg-warning/5"
+                              : "border-border/60 bg-background"
+                          }`}
+                        >
+                          {articlesEditMode ? (
+                            <div className="flex-1 grid grid-cols-[90px_1fr_auto] gap-2 items-center">
+                              <input
+                                value={a.numero}
+                                onChange={(e) => updateArticle(i, { numero: e.target.value })}
+                                placeholder="N°"
+                                className="px-2 py-1 text-sm rounded border border-input bg-background"
+                              />
+                              <input
+                                value={a.libelle}
+                                onChange={(e) => updateArticle(i, { libelle: e.target.value })}
+                                placeholder="Libellé"
+                                className="px-2 py-1 text-sm rounded border border-input bg-background"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeArticle(i)}
+                                className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                aria-label="Supprimer l'article"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-sm flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-foreground">Article {a.numero}</span>
+                              <span className="text-muted-foreground"> — {a.libelle}</span>
+                              {invalid ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning/15 text-warning text-[10px] font-medium">
+                                  <AlertCircle className="h-3 w-3" /> Hors périmètre
+                                </span>
+                              ) : liveValidation.expected.length ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-success/15 text-success text-[10px] font-medium">
+                                  <Check className="h-3 w-3" /> Cohérent
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
+                          {!articlesEditMode && a.url && (
                             <a
                               href={a.url}
                               target="_blank"
@@ -481,8 +644,51 @@ export default function PoliceNouveau() {
                             </a>
                           )}
                         </li>
-                      ))}
-                    </ul>
+                      );
+                    })}
+                  </ul>
+                  {articlesEditMode && (
+                    <button
+                      type="button"
+                      onClick={addArticle}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border border-dashed border-input text-muted-foreground hover:bg-muted"
+                    >
+                      <Plus className="h-3 w-3" /> Ajouter un article
+                    </button>
+                  )}
+                </div>
+
+                {formData.description && diffChanged && (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDiff((v) => !v)}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs border border-input text-muted-foreground hover:bg-muted"
+                    >
+                      <GitCompare className="h-3.5 w-3.5" />
+                      {showDiff ? "Masquer la comparaison" : "Comparer avec la description actuelle"}
+                    </button>
+                    {showDiff && (
+                      <pre className="max-h-64 overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs font-mono whitespace-pre-wrap">
+                        {diff.map((d, i) => (
+                          <div
+                            key={i}
+                            className={
+                              d.type === "add"
+                                ? "bg-success/10 text-success"
+                                : d.type === "rm"
+                                ? "bg-destructive/10 text-destructive line-through"
+                                : "text-foreground/70"
+                            }
+                          >
+                            <span className="select-none opacity-60 mr-1">
+                              {d.type === "add" ? "+" : d.type === "rm" ? "-" : " "}
+                            </span>
+                            {d.line || "\u00A0"}
+                          </div>
+                        ))}
+                      </pre>
+                    )}
                   </div>
                 )}
 
