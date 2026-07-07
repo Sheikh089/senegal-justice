@@ -570,6 +570,24 @@ export default function PoliceNouveau() {
                             <Wand2 className="h-3 w-3" /> Auto-corriger
                           </button>
                         )}
+                        {liveValidation.expected.length > 0 &&
+                          (liveValidation.invalidArticles.length > 0 ||
+                            liveValidation.missingExpected.length > 0) && (
+                            <button
+                              type="button"
+                              onClick={correctWithAI}
+                              disabled={correcting || generating}
+                              aria-label="Corriger avec l'IA"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-warning/20 text-warning hover:bg-warning/30 disabled:opacity-50"
+                            >
+                              {correcting ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3 w-3" />
+                              )}
+                              Corriger avec l'IA
+                            </button>
+                          )}
                         <button
                           type="button"
                           onClick={() => generateDescription()}
