@@ -52,7 +52,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { titre, type_infraction, lieu } = await req.json();
+    const {
+      titre,
+      type_infraction,
+      lieu,
+      expected_articles,
+      missing_articles,
+      invalid_articles,
+    }: {
+      titre?: string;
+      type_infraction?: string;
+      lieu?: string;
+      expected_articles?: string[];
+      missing_articles?: string[];
+      invalid_articles?: string[];
+    } = await req.json();
     if (!titre && !type_infraction) {
       return new Response(JSON.stringify({ error: "titre ou type_infraction requis" }), {
         status: 400,
@@ -82,9 +96,22 @@ Consignes :
   ]
 }`;
 
+    const hasCorrection =
+      (missing_articles && missing_articles.length > 0) ||
+      (invalid_articles && invalid_articles.length > 0) ||
+      (expected_articles && expected_articles.length > 0);
+
+    const correctionBlock = hasCorrection
+      ? `\n\nCORRECTION DEMANDÉE :
+- Cite impérativement les articles suivants (ils sont attendus pour ce type d'infraction) : ${(expected_articles ?? []).join(", ") || "(aucun)"}
+- Articles manquants à ajouter : ${(missing_articles ?? []).join(", ") || "(aucun)"}
+- N'utilise PAS les articles suivants (hors périmètre) : ${(invalid_articles ?? []).join(", ") || "(aucun)"}
+Réponds avec la même structure JSON.`
+      : "";
+
     const userPrompt = `Titre du dossier : ${titre ?? "(non précisé)"}
 Type d'infraction : ${type_infraction ?? "(non précisé)"}
-Lieu : ${lieu ?? "(non précisé)"}`;
+Lieu : ${lieu ?? "(non précisé)"}${correctionBlock}`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
