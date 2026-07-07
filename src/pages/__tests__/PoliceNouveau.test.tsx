@@ -164,6 +164,7 @@ describe("PoliceNouveau — validation & diff (e2e)", () => {
     const added = await screen.findAllByText(/Nouvelle description proposée/i);
     expect(added.length).toBeGreaterThanOrEqual(1);
     // ligne supprimée (rm) — visible uniquement dans le diff
-    expect(screen.getByText(/Ancienne description existante/i)).toBeInTheDocument();
+    const removed = screen.getAllByText(/Ancienne description existante/i);
+    expect(removed.length).toBeGreaterThanOrEqual(1);
   });
 });
