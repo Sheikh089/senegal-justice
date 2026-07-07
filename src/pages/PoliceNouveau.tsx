@@ -71,6 +71,8 @@ export default function PoliceNouveau() {
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [generationId, setGenerationId] = useState<string | null>(null);
+  const [correcting, setCorrecting] = useState(false);
 
   const [formData, setFormData] = useState({
     titre: "",
@@ -93,7 +95,9 @@ export default function PoliceNouveau() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const generateDescription = async () => {
+  const generateDescription = async (
+    opts?: { expected?: string[]; missing?: string[]; invalid?: string[]; correction?: boolean }
+  ) => {
     if (!formData.titre && !formData.type_infraction) {
       toast({
         title: "Titre requis",
@@ -102,16 +106,21 @@ export default function PoliceNouveau() {
       });
       return;
     }
-    setGenerating(true);
+    if (opts?.correction) setCorrecting(true);
+    else setGenerating(true);
     setErrorMsg(null);
     const { data, error } = await supabase.functions.invoke("generate-description", {
       body: {
         titre: formData.titre,
         type_infraction: formData.type_infraction,
         lieu: formData.lieu,
+        expected_articles: opts?.expected,
+        missing_articles: opts?.missing,
+        invalid_articles: opts?.invalid,
       },
     });
     setGenerating(false);
+    setCorrecting(false);
     if (error || (data as any)?.error) {
       const msg = data?.error || error?.message || "Erreur IA";
       setErrorMsg(msg);
@@ -130,23 +139,49 @@ export default function PoliceNouveau() {
     setShowDiff(false);
     setPreviewMode("preview");
 
-    // Historique : on enregistre chaque génération
+    // Historique : on enregistre chaque génération et on garde l'id
+    // pour synchroniser les éditions ultérieures (articles, description).
     if (user) {
-      const { error: histErr } = await (supabase as any).from("ai_generations").insert({
-        user_id: user.id,
-        titre: formData.titre || null,
-        type_infraction: formData.type_infraction || null,
-        lieu: formData.lieu || null,
-        prompt: result.prompt,
-        model: result.model,
-        version: result.version,
-        description: result.description,
-        articles: result.articles,
-        warnings: result.warnings,
-      });
+      const { data: inserted, error: histErr } = await (supabase as any)
+        .from("ai_generations")
+        .insert({
+          user_id: user.id,
+          titre: formData.titre || null,
+          type_infraction: formData.type_infraction || null,
+          lieu: formData.lieu || null,
+          prompt: result.prompt,
+          model: result.model,
+          version: result.version,
+          description: result.description,
+          articles: result.articles,
+          warnings: result.warnings,
+        })
+        .select("id")
+        .single();
       if (histErr) console.error("Historique IA :", histErr);
+      setGenerationId((inserted as { id: string } | null)?.id ?? null);
     }
   };
+
+  // Sauvegarde automatique des éditions manuelles (articles / description)
+  // dans la ligne ai_generations, pour qu'une réutilisation ultérieure
+  // restaure exactement la sélection de l'utilisateur.
+  useEffect(() => {
+    if (!generationId || !preview) return;
+    const t = setTimeout(async () => {
+      const { error: updErr } = await (supabase as any)
+        .from("ai_generations")
+        .update({
+          description: editedDescription,
+          articles: editedArticles,
+          warnings: liveValidation.warnings,
+        })
+        .eq("id", generationId);
+      if (updErr) console.error("Sync génération :", updErr);
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedDescription, editedArticles, generationId]);
 
   const buildArticlesBlock = (articles: Article[]) =>
     articles.length
@@ -174,7 +209,17 @@ export default function PoliceNouveau() {
     if (!preview) return;
     setFormData((prev) => ({ ...prev, description: candidateDescription }));
     setPreview(null);
+    setGenerationId(null);
     toast({ title: "Description appliquée", description: "Tu peux encore l'éditer dans le formulaire." });
+  };
+
+  const correctWithAI = () => {
+    void generateDescription({
+      expected: liveValidation.expected,
+      missing: liveValidation.missingExpected,
+      invalid: liveValidation.invalidArticles,
+      correction: true,
+    });
   };
 
   const autoFixArticles = () => {
@@ -467,7 +512,7 @@ export default function PoliceNouveau() {
                 </button>
                 <button
                   type="button"
-                  onClick={generateDescription}
+                  onClick={() => generateDescription()}
                   disabled={generating}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors disabled:opacity-50"
                 >
@@ -525,9 +570,27 @@ export default function PoliceNouveau() {
                             <Wand2 className="h-3 w-3" /> Auto-corriger
                           </button>
                         )}
+                        {liveValidation.expected.length > 0 &&
+                          (liveValidation.invalidArticles.length > 0 ||
+                            liveValidation.missingExpected.length > 0) && (
+                            <button
+                              type="button"
+                              onClick={correctWithAI}
+                              disabled={correcting || generating}
+                              aria-label="Corriger avec l'IA"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-warning/20 text-warning hover:bg-warning/30 disabled:opacity-50"
+                            >
+                              {correcting ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3 w-3" />
+                              )}
+                              Corriger avec l'IA
+                            </button>
+                          )}
                         <button
                           type="button"
-                          onClick={generateDescription}
+                          onClick={() => generateDescription()}
                           disabled={generating}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border border-warning/30 text-warning hover:bg-warning/10 disabled:opacity-50"
                         >
@@ -703,7 +766,7 @@ export default function PoliceNouveau() {
                   </button>
                   <button
                     type="button"
-                    onClick={generateDescription}
+                    onClick={() => generateDescription()}
                     disabled={generating}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
                   >
