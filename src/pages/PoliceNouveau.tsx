@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FilePlus,
   Send,
@@ -13,14 +13,26 @@ import {
   Check,
   X,
   RefreshCw,
+  Wand2,
+  Plus,
+  Trash2,
+  GitCompare,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { generateReference } from "@/lib/dossier-helpers";
+import {
+  type Article,
+  buildArticleUrl,
+  diffLines,
+  hasChanges,
+  normalizeArticleNumber,
+  suggestedArticlesFor,
+  validateArticles,
+} from "@/lib/penal-code";
 
-type Article = { numero: string; libelle: string; url?: string };
 type GenerationResult = {
   description: string;
   articles: Article[];
@@ -53,6 +65,9 @@ export default function PoliceNouveau() {
   const [preview, setPreview] = useState<GenerationResult | null>(null);
   const [previewMode, setPreviewMode] = useState<"preview" | "edit">("preview");
   const [editedDescription, setEditedDescription] = useState("");
+  const [editedArticles, setEditedArticles] = useState<Article[]>([]);
+  const [articlesEditMode, setArticlesEditMode] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -110,6 +125,9 @@ export default function PoliceNouveau() {
     }
     setPreview(result);
     setEditedDescription(result.description);
+    setEditedArticles(result.articles ?? []);
+    setArticlesEditMode(false);
+    setShowDiff(false);
     setPreviewMode("preview");
 
     // Historique : on enregistre chaque génération
@@ -130,16 +148,68 @@ export default function PoliceNouveau() {
     }
   };
 
+  const buildArticlesBlock = (articles: Article[]) =>
+    articles.length
+      ? "\n\nQualification pénale :\n" +
+        articles.map((a) => `- Article ${a.numero} du Code pénal : ${a.libelle}`).join("\n")
+      : "";
+
+  const candidateDescription = useMemo(
+    () => editedDescription + buildArticlesBlock(editedArticles),
+    [editedDescription, editedArticles]
+  );
+
+  const liveValidation = useMemo(
+    () => validateArticles(formData.type_infraction, editedArticles),
+    [formData.type_infraction, editedArticles]
+  );
+
+  const diff = useMemo(
+    () => diffLines(formData.description, candidateDescription),
+    [formData.description, candidateDescription]
+  );
+  const diffChanged = hasChanges(diff);
+
   const applyPreview = () => {
     if (!preview) return;
-    const articlesBlock = preview.articles.length
-      ? "\n\nQualification pénale :\n" +
-        preview.articles.map((a) => `- Article ${a.numero} du Code pénal : ${a.libelle}`).join("\n")
-      : "";
-    setFormData((prev) => ({ ...prev, description: editedDescription + articlesBlock }));
+    setFormData((prev) => ({ ...prev, description: candidateDescription }));
     setPreview(null);
     toast({ title: "Description appliquée", description: "Tu peux encore l'éditer dans le formulaire." });
   };
+
+  const autoFixArticles = () => {
+    const suggested = suggestedArticlesFor(formData.type_infraction);
+    if (!suggested.length) {
+      toast({
+        title: "Auto-correction indisponible",
+        description: "Aucune liste d'articles de référence pour ce type d'infraction.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEditedArticles(suggested);
+    setArticlesEditMode(false);
+    toast({ title: "Articles corrigés", description: `${suggested.length} article(s) mis à jour.` });
+  };
+
+  const updateArticle = (i: number, patch: Partial<Article>) => {
+    setEditedArticles((prev) =>
+      prev.map((a, idx) => {
+        if (idx !== i) return a;
+        const next = { ...a, ...patch };
+        if (patch.numero !== undefined) {
+          next.numero = patch.numero;
+          const n = normalizeArticleNumber(patch.numero);
+          if (n) next.url = buildArticleUrl(n);
+        }
+        return next;
+      })
+    );
+  };
+  const removeArticle = (i: number) =>
+    setEditedArticles((prev) => prev.filter((_, idx) => idx !== i));
+  const addArticle = () =>
+    setEditedArticles((prev) => [...prev, { numero: "", libelle: "", url: undefined }]);
 
   const loadHistory = async () => {
     if (!user) return;
@@ -172,6 +242,9 @@ export default function PoliceNouveau() {
       prompt: row.prompt,
     });
     setEditedDescription(row.description);
+    setEditedArticles(row.articles ?? []);
+    setArticlesEditMode(false);
+    setShowDiff(false);
     setPreviewMode("preview");
     setShowHistory(false);
   };
