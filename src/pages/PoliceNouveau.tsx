@@ -81,6 +81,9 @@ export default function PoliceNouveau() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [correcting, setCorrecting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"infraction" | "mis_en_cause" | "recit" | "recapitulatif">(
+    "infraction"
+  );
 
   const [formData, setFormData] = useState({
     titre: "",
